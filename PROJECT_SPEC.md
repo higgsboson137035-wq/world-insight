@@ -36,6 +36,20 @@ World Insight は速報やニュースの網羅を目的としない。判断材
 12. Take One Thing
 13. 今日の問い／今日の宿題
 
+## Virtual Cabinet Design Principle
+
+### Priority-Based Options
+
+Quick ChoicesとVirtual CabinetのA/B/Cは、思想ラベルや単純な「賛成／反対」ではなく、「何を最優先するか」の違いとして設計する。
+
+- Aは、人命、安全通航、市場安定などの即時安定を優先する案。
+- Bは、圧力・抑止を維持しながら安全通航などに限定協力する中間案。
+- Cは、核、制裁、地域安全保障などを含む長期的・包括的な条件を優先する案。
+
+中間案は現実的な折衷案として意図的に検討するが、「正解」「推奨」「現実解」とは扱わない。問題の先送り、抑止力低下、一時措置の恒久化、国内政治上の反発、検証失敗などのコストとリスクを必ず示す。
+
+Virtual Cabinetでは、各案について最優先する価値、期待利益、コスト、利益を受ける主体、負担する主体、責任の衝突、失敗時のリスク、短期的効果、長期的効果を整理する。Quick Choicesでは優先価値だけを短く示し、詳細はVirtual Cabinetで展開する。
+
 ## Insight Pyramid
 
 記事の分析には、次の七層を用いる。
@@ -78,6 +92,27 @@ Layer 3 を中心的な層として扱い、主体の利益を金銭や単純な
 - launchd による実行
 - GitHub Pages の自動更新
 - World Brief 本体の変更
+
+## Browser Preview Rule
+
+ブラウザ確認は必ずローカルサーバー経由で行う。HTMLファイルを `file://` で直接開く方法は、標準確認手順として使用しない。
+
+理由は、Safari等でCSSや外部リソースの読み込み挙動が異なる場合があること、GitHub Pages等のHTTP配信環境に近い条件で確認できること、SafariとChromeの表示差を検証しやすいことである。
+
+標準手順：
+
+```bash
+cd ~/Workspace/world-insight
+python3 -m http.server 8000
+```
+
+ブラウザで次のURLを開く。
+
+```text
+http://localhost:8000/sample/pilot_001.html
+```
+
+確認対象はSafariとChromeとする。両ブラウザで、CSSの読み込み、横スクロールの有無、レイアウトの大きな崩れ、Question First、Insight Shiftの識別性を確認する。終了時は `Control + C` でローカルサーバーを停止する。
 
 ## 現時点の実装状態
 

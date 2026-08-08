@@ -38,3 +38,24 @@ World Insight は、ニュースを材料に、読者の判断力と思考力を
 ## 今後の予定
 
 Foundation のレビュー後、HTMLプロトタイプ、JSON入力形式、最新ページ、日付別アーカイブを順に設計・実装し、Safariで表示を確認します。自動収集や完全自動生成は v0.1 の対象外です。
+
+## Builder
+
+記事の編集対象は `articles/*.md` です。`index.html`、`archive.html`、`archive/*.html` は生成物であり、直接編集せず、次のコマンドで再生成します。
+
+```bash
+source .venv/bin/activate
+python3 scripts/build.py
+```
+
+初回セットアップでは、Python仮想環境を作成して依存関係をインストールします。
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements.txt
+python3 scripts/build.py
+python3 -m http.server 8000
+```
+
+ブラウザ確認は `http://localhost:8000/` を使用します。ルートの `index.html`、`archive.html`、`archive/`、`css/` は、将来GitHub Pagesの公開対象にできます。`file://` 直開きは標準確認手順にしません。

@@ -1,0 +1,477 @@
+{
+  "schema_version": "0.1-draft",
+  "insight_id": "insight-fictional-monetary-policy-001",
+  "date": "2099-01-15",
+  "title": "物価高と景気減速の間で、金融政策は何を優先すべきか",
+  "question": "国内の物価上昇が続く一方で海外景気が減速するとき、中央銀行はどの責任とリスクを優先すべきか。",
+  "thinking_skill": {
+    "primary": "複数の責任が衝突する状況で判断条件を分ける",
+    "secondary": [
+      "短期と長期を分ける",
+      "政策効果の分配を見る",
+      "不確実性の下で判断を更新する"
+    ],
+    "transfer_goal": "安全保障、医療配分、環境政策など、単一目的では決められない問題にも使う。"
+  },
+  "compass": {
+    "context": "これは実在国を示さない架空ケースである。国内では幅広い品目の価格が上昇しているが、海外需要には減速の兆候がある。",
+    "key_terms": [
+      {
+        "term": "金融引き締め",
+        "definition": "政策金利などを通じて需要や物価上昇を抑えようとする政策。効果には時間差がある。"
+      },
+      {
+        "term": "供給要因",
+        "definition": "輸入価格や供給制約など、国内需要の強さだけでは説明できない価格変動の要因。"
+      }
+    ],
+    "time_horizons": [
+      "今後数か月の家計負担",
+      "1年から2年程度の物価と雇用",
+      "中長期の政策信認と潜在成長"
+    ],
+    "key_tensions": [
+      "物価安定と景気・雇用の下支え",
+      "早期対応の便益と政策効果の時間差",
+      "中央銀行の独立性と政府との政策協調"
+    ],
+    "uncertainties": [
+      "物価上昇が需要主導か供給主導か",
+      "海外減速が国内雇用へ波及する速さ",
+      "金利変更が為替や期待へ与える効果"
+    ]
+  },
+  "summary": {
+    "thirty_second": "架空国では物価上昇が続く一方、海外景気が減速している。引き締めは物価と通貨への信認を支え得るが、借入負担と景気悪化を強める可能性がある。判断には物価の原因、政策の時間差、負担の分配を理解する必要がある。",
+    "known": [
+      "国内の物価上昇は中央銀行の安定目標を上回る想定である。",
+      "海外需要の減速は輸出部門の見通しを弱めている。",
+      "金融政策の効果は一様でも即時でもない。"
+    ],
+    "uncertain": [
+      "物価上昇の持続期間",
+      "海外減速の深さ",
+      "各政策選択の家計・企業への波及速度"
+    ],
+    "why_it_matters": "物価、雇用、為替、政府財政への影響が異なる主体へ異なる時期に現れるため。"
+  },
+  "decision_materials": [
+    {
+      "id": "material-inflation-pattern",
+      "material_type": "numeric",
+      "label": "物価上昇の広がり",
+      "value": "目標を上回り、複数の基礎的品目へ広がっているという架空の観測",
+      "unit": "qualitative_index",
+      "period_or_date": "直近数四半期という想定",
+      "significance": "一時的な個別価格の変化か、持続的な物価上昇かで政策判断が変わる。",
+      "uncertainty": {
+        "level": "high",
+        "description": "需要、輸入価格、供給制約の寄与を分離できていない。",
+        "what_could_resolve_it": "品目別価格、賃金、需要、輸入価格の追加分析。"
+      },
+      "source_ids": [
+        "source-fictional-price-report"
+      ]
+    },
+    {
+      "id": "material-external-demand",
+      "material_type": "numeric",
+      "label": "海外需要の方向",
+      "value": "主要輸出先で減速の兆候があるという架空のシナリオ",
+      "unit": "directional_assessment",
+      "period_or_date": "今後2四半期の想定",
+      "significance": "輸出、生産、雇用への下押しが強ければ、引き締めの景気コストが大きくなる。",
+      "uncertainty": {
+        "level": "high",
+        "description": "減速の期間と国内への波及率は不明。",
+        "what_could_resolve_it": "受注、貿易、企業計画、海外先行指標の更新。"
+      },
+      "source_ids": [
+        "source-fictional-external-outlook"
+      ]
+    },
+    {
+      "id": "material-central-bank-mandate",
+      "material_type": "institutional",
+      "label": "中央銀行の制度的責務",
+      "value": "物価安定を中心としつつ、金融システムと経済活動への影響も考慮する架空の制度",
+      "unit": "not_applicable",
+      "period_or_date": "架空制度の現行規定",
+      "significance": "政策担当者が優先すべき責任と説明義務の範囲を定める。",
+      "uncertainty": {
+        "level": "medium",
+        "description": "複数目的が衝突した場合の重みは制度文だけでは一意に決まらない。",
+        "what_could_resolve_it": "過去の説明、議会審議、制度解釈の確認。"
+      },
+      "source_ids": [
+        "source-fictional-central-bank-act"
+      ]
+    },
+    {
+      "id": "material-policy-lag",
+      "material_type": "institutional",
+      "label": "政策効果の時間差",
+      "value": "金利変更の物価と雇用への影響には不確実な時間差がある",
+      "unit": "not_applicable",
+      "period_or_date": "政策決定時点",
+      "significance": "現在の物価だけでなく、政策が効く時点の景気を見通す必要がある。",
+      "uncertainty": {
+        "level": "high",
+        "description": "家計と企業の債務構造によって波及速度が変わる。",
+        "what_could_resolve_it": "融資条件、債務満期、住宅ローン構成の確認。"
+      },
+      "source_ids": [
+        "source-fictional-policy-review"
+      ]
+    }
+  ],
+  "human_context": {
+    "framing": "各主体の反応を得失だけで説明せず、背景、制約、価値、責任、複数の動機から理解する。",
+    "understanding_is_not_justification": true,
+    "stakeholders": [
+      {
+        "id": "stakeholder-households",
+        "name": "家計",
+        "role": "物価、雇用、預金金利、借入金利の影響を受ける生活主体",
+        "what_they_protect": ["日々の生活", "住居", "雇用", "家族の将来"],
+        "values": ["生活の安定", "公平性", "将来の予測可能性"],
+        "background": ["所得、資産、債務、家族構成によって影響が異なる"],
+        "constraints": ["価格上昇を自力で避けにくい", "変動金利債務を持つ家計もある"],
+        "responsibilities": ["家族の生活を維持する", "将来への備えを行う"],
+        "motivations": [
+          {"type": "material_interest", "description": "実質購買力と雇用を守る"},
+          {"type": "benefit_to_others", "description": "子どもや扶養家族の生活を守る"},
+          {"type": "mutual_aid", "description": "家族や地域内で負担を支え合う"}
+        ],
+        "incentives": ["金利上昇時に支出や借入を抑える", "物価上昇が続くと見れば購入を前倒しする"],
+        "fears_or_risks": ["生活必需品の負担増", "失業", "返済負担の増加"],
+        "short_term_interests": ["食料・光熱費の安定", "雇用維持"],
+        "long_term_interests": ["安定した物価", "持続的な所得成長", "金融の安定"],
+        "negotiating_power": {"level": "low_to_medium", "sources": ["投票", "消費行動", "市民団体"], "limits": ["個々の家計は政策決定へ直接参加しにくい"]},
+        "voice_strength": {"level": "uneven", "channels": ["選挙", "世論調査", "報道"], "barriers": ["低所得世帯や将来世代の声は届きにくい"]},
+        "who_they_are_accountable_to": ["家族", "債権者", "自分自身"],
+        "possible_compromises": ["段階的な引き締めと、脆弱な家計への限定支援の組み合わせ"],
+        "non_negotiables": ["最低限の生活と住居を維持できること"],
+        "public_interest_dimension": {"contribution": "消費、労働、納税を通じて社会を支える", "tension_with_private_interest": "個別支援が広すぎると物価抑制を弱め得る", "long_term_social_effect": "生活不安の拡大は社会的信頼を損なう可能性がある"}
+      },
+      {
+        "id": "stakeholder-exporters",
+        "name": "輸出企業",
+        "role": "海外需要、為替、資金調達条件の影響を受ける生産・雇用主体",
+        "what_they_protect": ["雇用", "取引関係", "生産能力", "事業継続"],
+        "values": ["競争力", "予測可能性", "従業員と取引先への責任"],
+        "background": ["海外売上比率と為替ヘッジ能力は企業ごとに異なる"],
+        "constraints": ["海外需要を制御できない", "設備と雇用を急に調整しにくい"],
+        "responsibilities": ["従業員への雇用責任", "顧客への供給責任", "株主・債権者への説明責任"],
+        "motivations": [
+          {"type": "material_interest", "description": "収益と事業継続を守る"},
+          {"type": "institutional_role", "description": "雇用と供給契約を維持する"},
+          {"type": "long_term_social_stability", "description": "地域の産業基盤を維持する"}
+        ],
+        "incentives": ["資金調達費用を抑える", "為替変動を管理する", "需要減速時に投資を延期する"],
+        "fears_or_risks": ["海外受注減", "金利上昇", "急激な為替変動"],
+        "short_term_interests": ["受注と資金繰りの維持"],
+        "long_term_interests": ["競争力", "人材と技術への投資", "安定した政策環境"],
+        "negotiating_power": {"level": "medium_to_high", "sources": ["雇用規模", "業界団体", "政策対話"], "limits": ["中央銀行の法定判断を直接決定できない"]},
+        "voice_strength": {"level": "high", "channels": ["業界団体", "決算発表", "政府との対話"], "barriers": ["中小輸出企業の事情は代表されにくい"]},
+        "who_they_are_accountable_to": ["従業員", "顧客", "株主", "債権者", "地域社会"],
+        "possible_compromises": ["予見可能な段階的政策と、資金繰り支援の併用"],
+        "non_negotiables": ["契約を履行できる最低限の資金流動性"],
+        "public_interest_dimension": {"contribution": "雇用、輸出収入、技術基盤を支える", "tension_with_private_interest": "企業支援が物価安定や財政負担と衝突し得る", "long_term_social_effect": "産業空洞化または生産性投資の停滞に影響し得る"}
+      },
+      {
+        "id": "stakeholder-importers",
+        "name": "輸入企業",
+        "role": "為替、海外価格、国内需要を通じて生活必需品や投入財を供給する主体",
+        "what_they_protect": ["安定供給", "取引先", "雇用", "採算"],
+        "values": ["供給継続", "価格の予測可能性", "顧客との信頼"],
+        "background": ["仕入通貨、在庫、価格転嫁能力によって影響が異なる"],
+        "constraints": ["海外価格と為替を制御できない", "価格転嫁には時間差と顧客負担がある"],
+        "responsibilities": ["顧客への安定供給", "従業員への責任", "安全・品質基準の遵守"],
+        "motivations": [
+          {"type": "material_interest", "description": "採算と資金繰りを維持する"},
+          {"type": "institutional_role", "description": "必要な物資を継続供給する"},
+          {"type": "public_good", "description": "基礎的な財の供給網を保つ"}
+        ],
+        "incentives": ["通貨安リスクを抑える", "仕入先を分散する", "費用を価格へ転嫁する"],
+        "fears_or_risks": ["輸入費用の急増", "需要減", "供給停止"],
+        "short_term_interests": ["為替と仕入価格の安定", "運転資金の確保"],
+        "long_term_interests": ["供給網の強靱化", "安定した通貨と需要"],
+        "negotiating_power": {"level": "medium", "sources": ["供給網上の役割", "業界団体"], "limits": ["海外供給者への交渉力が弱い場合がある"]},
+        "voice_strength": {"level": "medium", "channels": ["業界団体", "顧客との価格交渉"], "barriers": ["小規模事業者の声が集約されにくい"]},
+        "who_they_are_accountable_to": ["顧客", "従業員", "取引先", "規制当局"],
+        "possible_compromises": ["段階的価格改定と長期契約による変動緩和"],
+        "non_negotiables": ["安全基準と供給継続に必要な採算"],
+        "public_interest_dimension": {"contribution": "生活・生産に必要な輸入財を供給する", "tension_with_private_interest": "価格転嫁は事業を守るが家計負担を増やす", "long_term_social_effect": "供給網の多様化は社会の耐久性を高め得る"}
+      },
+      {
+        "id": "stakeholder-central-bank",
+        "name": "中央銀行",
+        "role": "物価と金融の安定に制度的責任を負う政策主体",
+        "what_they_protect": ["物価安定", "金融システム", "政策への信認", "制度的独立性"],
+        "values": ["専門的判断", "説明責任", "予測可能性", "公共善"],
+        "background": ["不完全なデータの下で将来を見通し、時間差のある政策を決める"],
+        "constraints": ["供給能力を直接増やせない", "政策効果が遅く不均一", "法定責務に従う必要がある"],
+        "responsibilities": ["物価安定", "金融安定", "国民と議会への説明", "政策手段の比例性"],
+        "motivations": [
+          {"type": "professional_ethics", "description": "証拠に基づく独立した専門判断を守る"},
+          {"type": "public_good", "description": "通貨と金融への信頼を維持する"},
+          {"type": "institutional_role", "description": "法定責務を果たす"},
+          {"type": "mission", "description": "長期的な経済安定へ貢献する"}
+        ],
+        "incentives": ["信認を維持する", "将来の物価期待を安定させる", "政策の急変を避ける"],
+        "fears_or_risks": ["物価上昇の定着", "過度な引き締め", "金融不安", "独立性への不信"],
+        "short_term_interests": ["期待の安定", "市場の秩序ある調整"],
+        "long_term_interests": ["物価と金融の安定", "制度的信頼", "政策余地の維持"],
+        "negotiating_power": {"level": "high", "sources": ["法定権限", "政策手段", "情報発信"], "limits": ["供給政策と財政政策は直接実施できない", "実体経済の反応を完全には制御できない"]},
+        "voice_strength": {"level": "high", "channels": ["政策声明", "議会説明", "市場対話"], "barriers": ["専門用語が市民の理解を妨げ得る"]},
+        "who_they_are_accountable_to": ["国民", "議会", "法定責務", "将来世代"],
+        "possible_compromises": ["小幅で段階的な変更", "条件付きの将来指針", "金融安定措置との組み合わせ"],
+        "non_negotiables": ["法定責務の放棄", "特定主体への恣意的な利益供与"],
+        "public_interest_dimension": {"contribution": "通貨、物価、金融システムの信頼を支える", "tension_with_private_interest": "公共的な安定策が一部家計や企業へ短期負担を課す", "long_term_social_effect": "信認の維持は長期的な取引と投資の基盤になる"}
+      },
+      {
+        "id": "stakeholder-government",
+        "name": "政府",
+        "role": "雇用、生活支援、財政、制度運営に責任を負う政治主体",
+        "what_they_protect": ["国民生活", "雇用", "財政の持続性", "社会的安定"],
+        "values": ["民主的正統性", "公平性", "公共善", "危機対応"],
+        "background": ["短期的な有権者の負担と長期的な財政・制度責任を同時に負う"],
+        "constraints": ["予算制約", "議会合意", "実施能力", "中央銀行の独立性"],
+        "responsibilities": ["脆弱な人を保護する", "公共サービスを維持する", "財政を持続可能にする", "議会と国民へ説明する"],
+        "motivations": [
+          {"type": "public_good", "description": "生活と雇用の安定を支える"},
+          {"type": "institutional_role", "description": "法律と予算に基づき政策を実施する"},
+          {"type": "long_term_social_stability", "description": "社会的分断と経済混乱を抑える"},
+          {"type": "material_interest", "description": "政治的支持と政権運営能力を維持する"}
+        ],
+        "incentives": ["目に見える短期支援を行う", "景気後退を避ける", "財政費用を抑える"],
+        "fears_or_risks": ["生活不安", "失業", "債務費用増", "政策不信"],
+        "short_term_interests": ["生活負担と雇用悪化の緩和"],
+        "long_term_interests": ["税収基盤", "財政持続性", "社会的信頼", "潜在成長"],
+        "negotiating_power": {"level": "high", "sources": ["予算", "立法", "規制", "国際交渉"], "limits": ["議会、司法、財政、中央銀行独立性による制約"]},
+        "voice_strength": {"level": "high", "channels": ["政策発表", "議会", "行政機関"], "barriers": ["省庁間や政治日程で一貫した説明が難しい場合がある"]},
+        "who_they_are_accountable_to": ["有権者", "議会", "法制度", "将来の納税者"],
+        "possible_compromises": ["一律支援ではなく対象を絞った時限措置", "供給制約を緩和する政策との組み合わせ"],
+        "non_negotiables": ["基本的権利の保護", "法に基づく予算執行"],
+        "public_interest_dimension": {"contribution": "再分配、公共サービス、制度調整を担う", "tension_with_private_interest": "短期の政治的利益が長期財政と衝突し得る", "long_term_social_effect": "適切な調整は物価対策の負担分配を改善し得る"}
+      }
+    ],
+    "relationships": [
+      {
+        "stakeholder_ids": ["stakeholder-households", "stakeholder-central-bank"],
+        "relationship_type": "conflict_and_dependency",
+        "interests_in_tension": ["物価抑制", "借入負担と雇用の維持"],
+        "power_asymmetry": "中央銀行が政策手段を持つ一方、個々の家計の声は間接的にしか届かない。",
+        "possible_landing_zone": "段階的な政策変更、不確実性の説明、政府による対象を絞った支援。"
+      },
+      {
+        "stakeholder_ids": ["stakeholder-exporters", "stakeholder-importers"],
+        "relationship_type": "conflict",
+        "interests_in_tension": ["為替変動が売上と仕入費用へ逆方向に作用し得る"],
+        "power_asymmetry": "大企業はヘッジと政策対話の手段を持つが、小規模企業は限られる。",
+        "possible_landing_zone": "予見可能な政策経路と、企業規模に応じた資金繰り支援。"
+      },
+      {
+        "stakeholder_ids": ["stakeholder-central-bank", "stakeholder-government"],
+        "relationship_type": "accountability_and_coordination",
+        "interests_in_tension": ["中央銀行の独立性", "政府の雇用・生活・財政責任"],
+        "power_asymmetry": "双方が異なる政策手段を持ち、単独では供給制約と需要の両方に対応できない。",
+        "possible_landing_zone": "目標を混同しない情報共有と、金融・財政・供給政策の役割分担。"
+      }
+    ]
+  },
+  "decision": {
+    "role": "中央銀行の政策決定会合の一員",
+    "situation": "物価上昇が続くが、海外需要の減速と国内雇用への波及が不確実な架空状況。",
+    "responsibility": "物価・金融の安定という制度的責務を果たし、政策の便益、負担、不確実性を社会へ説明する。",
+    "available_options": [
+      {
+        "id": "option-tighten-now",
+        "label": "直ちに引き締めを進める",
+        "potential_benefits": ["物価上昇の定着を抑える可能性", "政策信認を支える可能性", "通貨下落圧力を弱める可能性"],
+        "potential_costs": ["借入負担の増加", "投資と雇用の下押し", "海外減速との同時進行による景気悪化"],
+        "who_benefits": ["stakeholder-households", "stakeholder-importers"],
+        "who_bears_costs": ["stakeholder-households", "stakeholder-exporters", "stakeholder-government"],
+        "assumptions": ["物価上昇が持続的で需要にも支えられている", "政策が期待へ作用する"],
+        "risks": ["政策効果が現れる前に景気が弱まる", "供給要因の物価には効果が限定的"],
+        "responsibility_conflicts": ["物価安定への責任と、雇用・金融安定への配慮が衝突する"]
+      },
+      {
+        "id": "option-hold-and-observe",
+        "label": "現状を維持し、追加データを待つ",
+        "potential_benefits": ["海外減速の深さを確認できる", "不要な景気下押しを避ける可能性", "政策判断の情報量が増える"],
+        "potential_costs": ["物価上昇が定着する可能性", "対応の遅れと受け取られる可能性", "輸入費用への圧力が続く可能性"],
+        "who_benefits": ["stakeholder-exporters", "stakeholder-households"],
+        "who_bears_costs": ["stakeholder-households", "stakeholder-importers", "stakeholder-central-bank"],
+        "assumptions": ["待つことで得られる情報価値が大きい", "物価期待は短期間では不安定化しない"],
+        "risks": ["後からより急な引き締めが必要になる", "実質購買力の低下が続く"],
+        "responsibility_conflicts": ["慎重な証拠評価と、早期に物価を安定させる責任が衝突する"]
+      },
+      {
+        "id": "option-gradual-conditional",
+        "label": "小幅な引き締めと条件付き指針を組み合わせる",
+        "potential_benefits": ["物価への警戒を示しつつ調整速度を抑える", "追加情報で方針を更新できる", "市場の予見可能性を高める可能性"],
+        "potential_costs": ["物価にも景気にも効果が不十分な可能性", "条件付き説明が複雑になる", "政策の一貫性が疑われる可能性"],
+        "who_benefits": ["stakeholder-households", "stakeholder-importers", "stakeholder-exporters"],
+        "who_bears_costs": ["stakeholder-households", "stakeholder-exporters", "stakeholder-central-bank"],
+        "assumptions": ["段階的な変更でも期待へ作用する", "条件を明確に説明できる"],
+        "risks": ["妥協が問題の先送りになる", "市場が条件を誤解する"],
+        "responsibility_conflicts": ["柔軟性と、明確で信頼できる政策約束が衝突する"]
+      }
+    ],
+    "reader_prompt": "どの選択肢を選ぶかではなく、どの責任を優先し、どの情報が出たら方針を変えるかを考えてください。"
+  },
+  "what_if": [
+    {
+      "scenario": "物価上昇の大半が一時的な輸入供給制約だと判明する",
+      "changed_condition": "国内需要の寄与が想定より小さい",
+      "why_it_matters": "金融引き締めでは供給量を直接増やせず、景気コストに比べて物価効果が弱い可能性がある。",
+      "affected_stakeholders": ["stakeholder-households", "stakeholder-importers", "stakeholder-central-bank"],
+      "decision_pressure": "引き締めより供給対応と限定支援を重視する圧力が強まる。",
+      "question_to_reader": "物価の原因が政策手段では直接変えにくいとき、信認維持のための引き締めをどこまで正当化できるか。"
+    },
+    {
+      "scenario": "賃金とサービス価格の上昇が広がり、物価期待も上向く",
+      "changed_condition": "物価上昇が国内で持続する可能性が高まる",
+      "why_it_matters": "対応の遅れが将来のより大きな調整を必要にする可能性がある。",
+      "affected_stakeholders": ["stakeholder-households", "stakeholder-central-bank", "stakeholder-government"],
+      "decision_pressure": "早期引き締めと明確な説明への圧力が強まる。",
+      "question_to_reader": "将来の急激な調整を避けるために、現在どこまで負担を受け入れるべきか。"
+    }
+  ],
+  "paradox": [
+    {
+      "tension": "早く動く責任と、理解してから動く責任",
+      "positions": [
+        {
+          "position": "物価上昇の定着を防ぐため、早期に引き締める",
+          "reasonable_because": "政策には時間差があり、遅れれば将来の調整費用が大きくなり得る。",
+          "assumptions": ["物価上昇は持続的", "政策信認が期待形成に重要"],
+          "values_prioritized": ["物価安定", "予測可能性"],
+          "responsibilities_prioritized": ["通貨価値と政策信認を守る責任"],
+          "weaknesses": ["供給要因への効果が弱い", "景気減速を強め得る"],
+          "evidence_strength": "medium_in_fictional_case"
+        },
+        {
+          "position": "海外減速と物価の原因を理解するまで慎重に待つ",
+          "reasonable_because": "誤った原因診断による引き締めは、物価を十分下げず雇用だけを損なう可能性がある。",
+          "assumptions": ["追加データの情報価値が高い", "短期間の待機で信認は失われない"],
+          "values_prioritized": ["雇用", "比例性", "証拠に基づく判断"],
+          "responsibilities_prioritized": ["過度な政策損害を避ける責任"],
+          "weaknesses": ["対応が遅れる可能性", "物価負担が続く"],
+          "evidence_strength": "medium_in_fictional_case"
+        }
+      ]
+    }
+  ],
+  "shared_assumptions": {
+    "confirmed": ["物価の安定と持続可能な雇用の双方が社会に重要である"],
+    "contested": ["現在の物価上昇に国内需要がどの程度寄与しているか"],
+    "untested": ["小幅な政策変更でも期待へ十分作用する", "対象を絞った財政支援なら物価圧力を大きく高めない"]
+  },
+  "structural_issue": {
+    "hypothesis": "より深い論点は、政策金利の方向だけでなく、異なる政策主体が物価対策の責任と負担をどう分担するかにあるのではないか。",
+    "why_this_may_be_deeper": ["中央銀行は供給制約や生活支援を直接解決できない", "政府の支援設計は物価と公平性の双方に影響する", "政策負担は交渉力の弱い主体へ偏り得る"],
+    "alternative_explanations": ["中心問題は単純に金融政策の対応遅れである", "中心問題は海外供給制約であり国内制度調整ではない"],
+    "counterevidence": ["金利変更だけで物価と期待が速やかに安定するなら、政策分担仮説の重要性は下がる"],
+    "what_would_change_this_view": ["物価要因の詳細分析", "政策波及の実証", "財政・供給政策の実施可能性に関する新情報"]
+  },
+  "overlooked_perspective": [
+    {
+      "perspective": "低所得で借入を持つ家計は、物価高と金利上昇の双方を同時に負担し得る。",
+      "why_overlooked": "平均的な家計という集計では資産・債務・所得差が消える。",
+      "why_it_matters": "同じ政策でも負担能力と回復可能性が異なる。",
+      "related_stakeholders": ["stakeholder-households", "stakeholder-government"]
+    },
+    {
+      "perspective": "将来世代は、現在の物価だけでなく、政策信認、政府債務、失われる投資の影響を受ける。",
+      "why_overlooked": "現在の意思決定に直接参加できない。",
+      "why_it_matters": "短期負担の回避が長期の選択肢を狭める可能性がある。",
+      "related_stakeholders": ["stakeholder-central-bank", "stakeholder-government", "stakeholder-households"]
+    }
+  ],
+  "take_one_thing": {
+    "principle": "政策を評価するときは、目的だけでなく、誰がどの責任を負い、効果と負担がいつ現れるかを見る。",
+    "transfer_example": "感染症対策なら、健康保護、生活維持、実施責任、短期負担と長期リスクを同じ軸で整理できる。"
+  },
+  "final_question": {
+    "question_to_reader": "物価安定と景気・雇用が衝突するとき、あなたはどの責任を先に置き、どの事実が判明したら判断を変えますか。",
+    "reflection_prompt": "自分が家計、企業、中央銀行、政府のどの立場を暗黙に中心へ置いていたか書き出してください。",
+    "homework": "三つの選択肢それぞれについて、最も声が届きにくい負担主体を一つ挙げてください。"
+  },
+  "sources": [
+    {
+      "source_id": "source-fictional-price-report",
+      "source_type": "statistics_agency",
+      "organization": "架空国統計局",
+      "title": "架空物価動向資料",
+      "url": "https://example.invalid/fictional-price-report",
+      "published_at": "2099-01-10",
+      "accessed_at": "2099-01-15",
+      "primary_source": true,
+      "supports_fields": ["/summary/known/0", "/decision_materials/0"]
+    },
+    {
+      "source_id": "source-fictional-external-outlook",
+      "source_type": "international_organization",
+      "organization": "架空国際経済機関",
+      "title": "架空海外経済見通し",
+      "url": "https://example.invalid/fictional-external-outlook",
+      "published_at": "2099-01-08",
+      "accessed_at": "2099-01-15",
+      "primary_source": false,
+      "supports_fields": ["/summary/known/1", "/decision_materials/1"]
+    },
+    {
+      "source_id": "source-fictional-central-bank-act",
+      "source_type": "government",
+      "organization": "架空国立法府",
+      "title": "架空中央銀行法",
+      "url": "https://example.invalid/fictional-central-bank-act",
+      "published_at": "2090-04-01",
+      "accessed_at": "2099-01-15",
+      "primary_source": true,
+      "supports_fields": ["/decision_materials/2", "/human_context/stakeholders/3/responsibilities"]
+    },
+    {
+      "source_id": "source-fictional-policy-review",
+      "source_type": "academic",
+      "organization": "架空政策研究所",
+      "title": "架空金融政策波及レビュー",
+      "url": "https://example.invalid/fictional-policy-review",
+      "published_at": "2098-11-20",
+      "accessed_at": "2099-01-15",
+      "primary_source": false,
+      "supports_fields": ["/decision_materials/3"]
+    }
+  ],
+  "editorial_metadata": {
+    "five_year_test": {
+      "status": "pass_for_prototype",
+      "notes": "固有国名や現在値を外しても、責任、時間差、負担分配という問いが残る。",
+      "transferable_to": ["医療配分", "環境政策", "安全保障"]
+    },
+    "fairness_check": {
+      "status": "pass_for_prototype",
+      "notes": "立場の根拠、価値、責任、弱点を併記し、推奨選択肢を置いていない。"
+    },
+    "human_context_check": {
+      "status": "pass_for_prototype",
+      "notes": "5主体を複数動機、責任、制約、力関係で記述し、得失だけに還元していない。"
+    },
+    "uncertainty_check": {
+      "status": "pass_for_prototype",
+      "notes": "物価要因、海外減速、政策波及の不確実性と、更新に必要な情報を示した。"
+    },
+    "source_check": {
+      "status": "not_applicable_fictional_sample",
+      "notes": "構造検証用の架空出典であり、実在情報の事実確認を示すものではない。"
+    },
+    "responsibility_check": {
+      "status": "pass_for_prototype",
+      "notes": "各主体の責任と、選択肢ごとの責任の衝突を明示した。"
+    },
+    "notes": "このサンプルはデータ構造検証専用であり、現実の金融政策への推奨ではない。"
+  }
+}
