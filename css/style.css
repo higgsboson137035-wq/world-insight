@@ -324,6 +324,46 @@ a { color: var(--accent); }
 .source-note { margin-top: 22px; color: var(--muted); font-size: .78rem; }
 .site-footer { border-top: 1px solid var(--line); color: var(--muted); font-size: .82rem; }
 
+/* Generated article sections: the Markdown remains the source of truth while
+   the template supplies the recurring Thinking Journey reading rhythm. */
+.article-section { margin: 0 0 72px; scroll-margin-top: 28px; }
+.article-section > h2 { margin: 0 0 20px; padding-top: 26px; border-top: 1px solid var(--line); font-size: 1.55rem; font-weight: 600; line-height: 1.35; }
+.article-section > h3 { margin-top: 30px; color: var(--accent); font-size: 1.05rem; }
+.journey-divider { margin-top: 8px; margin-bottom: 18px; }
+.brief-grid, .card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.brief-card, .material-card, .context-card, .what-if-card { padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,255,255,.42); }
+.brief-card h3, .material-card h3, .context-card h3, .what-if-card h3 { margin: 0 0 10px; font-size: 1rem; }
+.brief-card p:last-child, .material-card p:last-child, .context-card p:last-child, .what-if-card p:last-child { margin-bottom: 0; }
+.quick-choices-section { margin-top: 0; padding-top: 0; }
+.quick-choices-section > ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 0; list-style: none; }
+.quick-choices-section > ul li { padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,255,255,.46); }
+.quick-choice-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.quick-choice-card { padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,255,255,.46); }
+.quick-choice-card h3 { margin: 0 0 8px; color: var(--accent); font-size: .95rem; }
+.quick-choice-card p { margin: 6px 0 0; font-size: .9rem; }
+.cabinet-section > blockquote { margin-bottom: 22px; }
+.cabinet-section .choice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.cabinet-section .choice-card { padding: 22px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,255,255,.42); }
+.cabinet-section .choice-card h3 { margin-top: 0; font-size: 1.05rem; }
+.cabinet-section .choice-card p:last-child { margin-bottom: 0; }
+.insight-shift-section { margin-top: 112px; padding: 48px 34px 54px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: #f4f7f4; }
+.insight-shift-section > h2 { border-top: 0; padding-top: 0; font-size: clamp(1.8rem, 4vw, 2.5rem); }
+.insight-shift-section .shift-step { display: grid; grid-template-columns: 36px 1fr; gap: 18px; margin: 34px 0; }
+.insight-shift-section .shift-step > span { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--line); color: var(--muted); font-weight: 700; }
+.insight-shift-section .shift-step h3 { margin: 0 0 8px; }
+.insight-shift-section .shift-new { margin-left: -10px; padding: 24px; border-left: 3px solid var(--accent); background: var(--accent-soft); }
+.thinking-trap-section { max-width: 680px; margin-top: 72px; }
+.thinking-trap-section blockquote { margin-top: 18px; }
+.take-one-thing-section blockquote { padding: 30px; background: var(--warm); border-radius: var(--radius); font-family: Georgia, "Times New Roman", serif; font-size: 1.25rem; line-height: 1.7; }
+.final-question-section { margin: 0 -28px 78px; padding: 72px 28px; background: var(--ink); color: var(--paper); }
+.final-question-section > h2 { border-top: 0; padding-top: 0; font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 400; }
+.final-question-section blockquote { margin: 0; border-left-color: #a7c7c2; background: transparent; font-size: 1.35rem; }
+.reflection-section { padding: 28px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,255,255,.4); }
+.reflection-section > h2 { border-top: 0; padding-top: 0; }
+.sources-section { margin-top: 36px; }
+.archive-list { display: grid; gap: 0; }
+.archive-entry { margin-top: 0; }
+
 @media (max-width: 720px) {
   body { font-size: 15px; }
   .site-header, .site-footer { padding: 22px 20px; }
@@ -345,4 +385,11 @@ a { color: var(--accent); }
   .landing, .archive-page { padding: 60px 20px 80px; }
   .final-question { margin: 0 -20px; padding: 62px 20px; }
   .final-question p { font-size: 1.18rem; }
+  .brief-grid, .card-grid, .cabinet-section .choice-grid { grid-template-columns: 1fr; }
+  .quick-choices-section > ul { grid-template-columns: 1fr; }
+  .quick-choice-cards { grid-template-columns: 1fr; }
+  .insight-shift-section { margin-top: 72px; padding: 34px 20px 40px; }
+  .insight-shift-section .shift-new { margin-left: 0; padding: 20px 16px; }
+  .final-question-section { margin: 0 -20px 60px; padding: 62px 20px; }
+  .final-question-section blockquote { font-size: 1.18rem; }
 }

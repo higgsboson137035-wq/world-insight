@@ -1,18 +1,27 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>World Insight</title><link rel="stylesheet" href="css/style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>World Insight</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="site-header"><a class="brand" href="index.html">WORLD INSIGHT</a><span class="brand-note">理解は、判断より先にある。</span></header>
+  <header class="site-header">
+    <a class="brand" href="index.html">WORLD INSIGHT</a>
+    <span class="brand-note">理解は、判断より先にある。</span>
+  </header>
   <main class="landing">
     <p class="mission">世界には、答えより問いがある。</p>
-    <p class="eyebrow">Latest Insight</p><p class="date">{{ date }}</p>
+    <p class="eyebrow">Latest Insight</p>
+    <p class="date">{{ date }}</p>
     <h1>{{ title }}</h1>
-    <div class="hero-question-block"><span>Today's Question</span><p>{{ question }}</p></div>
-    <p class="landing-summary">世界で起きていることを、複数の責任、トレードオフ、不確実性から考え直します。</p>
-    <p><a class="button-link" href="archive/{{ date }}.html">今日のInsightを読む</a></p>
+    <div class="hero-question-block">
+      <span>Today's Question</span>
+      <p>{{ question }}</p>
+    </div>
+    <p class="landing-summary">{{ summary }}</p>
+    <p><a class="button-link" href="{{ article_url }}">今日のInsightを読む</a></p>
     <p><a href="archive.html">過去のInsightを見る</a></p>
   </main>
   <footer class="site-footer">World Insight — 問いを届け、理解を育て、判断を支える。</footer>
