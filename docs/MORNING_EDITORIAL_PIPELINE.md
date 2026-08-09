@@ -91,3 +91,22 @@ python3 scripts/editorial_pipeline.py --date 2026-08-09
 ## Pilot #2の確認例
 
 2026-08-09のPilot #2では、World Brief、Daily Editorial、記事Markdown、Builder成果物、`PILOT_002B_SOURCE_VERIFICATION.md`のA判定候補を確認できる。しかし、検証文書に対象記事への明示的リンクがないためSource Verification Linkは`UNRESOLVED`であり、独立Editorial Review、Local Preview、Git Diff Review、Final Approvalの記録も存在しない。したがってPublish Readinessは証拠に基づき`BLOCKED`となる。記事本文の自己評価はInsight Shift / Take One Thingの参考信号に留める。
+
+## Morning Pipeline v0.2
+
+`python3 scripts/morning.py`を毎朝の単一入口とする。これは既存の`editorial_pipeline.py`の状態判定を再利用し、記事本文を生成したり、Build・ブラウザ確認・Git操作を自動実行したりしない。
+
+- World Briefは対象日を優先し、当日号がなければ`STALE`と表示する。古い号を当日号と誤認しない。
+- Daily Editorialは、通常は存在確認だけを行う。空の作業ファイルを作る場合だけ`--prepare`を使う。
+- `Next Action`には、その時点で人間が最初に行うべき1つの作業を表示する。残りのGateは必要な場合だけ一覧表示する。
+- Source Verification、Editorial Review、Insight Shift、Take One Thing、Build、Local Preview、Git Diff Review、Final Approvalの既存Gateは変更しない。
+- `BLOCKED`、`NEEDS_REVIEW`、`NEEDS_PREVIEW`、`NEEDS_GIT_REVIEW`、`WAITING_FOR_APPROVAL`の日は、公開を保留できる。
+
+標準のPreviewは次のとおりである。
+
+```bash
+cd ~/Workspace/world-insight
+python3 -m http.server 8000
+```
+
+`morning.py`はサーバーを起動しない。最終承認後のcommit、push、GitHub Pages操作も人間が行う。

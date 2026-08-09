@@ -22,6 +22,7 @@ WORLD_BRIEF_ROOT = Path.home() / "Workspace" / "world-brief"
 class PipelineState:
     today: str
     world_brief: Path | None
+    world_brief_status: str
     daily_editorial: Path
     source_verification: str
     source_verification_link: str
@@ -49,6 +50,18 @@ def latest_world_brief() -> Path | None:
         return None
     candidates = sorted(briefs.glob("*.md"), reverse=True)
     return candidates[0] if candidates else None
+
+
+def world_brief_for_date(today: str) -> Path | None:
+    path = WORLD_BRIEF_ROOT / "briefs" / f"{today}.md"
+    return path if path.exists() else None
+
+
+def world_brief_state(today: str, latest: Path | None = None) -> str:
+    """Distinguish today's brief from an older available issue."""
+    if world_brief_for_date(today):
+        return "FOUND"
+    return "STALE" if latest or latest_world_brief() else "MISSING"
 
 
 def prepare_daily_editorial(today: str) -> Path:
@@ -197,7 +210,7 @@ def inspect(today: str, prepare: bool = True) -> PipelineState:
     candidate_selected = bool(re.search(r"採用テーマ\s*[:：]\s*\S+", daily_text))
     seeds_present = "Insight Shift Seed" in daily_text and "Take One Thing Seed" in daily_text
     editorial_ready = bool(candidate_selected and seeds_present and article and all(section_present(article_text, section) for section in required_sections) and source in {"PASS_A", "PASS_B"} and source_link == "VERIFIED")
-    state = PipelineState(today, brief, daily, source, source_link, source_file, source_signal, article, article_text, review, insight, take,
+    state = PipelineState(today, brief, world_brief_state(today, brief), daily, source, source_link, source_file, source_signal, article, article_text, review, insight, take,
                           "READY" if editorial_ready else "NOT_READY", "READY" if build_ready else "NOT_READY",
                           manual["Local Preview"], manual["Safari"], manual["Chrome"], manual["Git Diff Review"], manual["Final Approval"], "", "")
     state.publish_readiness, state.next_action = publish_readiness(state)
@@ -211,7 +224,7 @@ def print_state(state: PipelineState) -> None:
     print("World Insight Morning Editorial Pipeline")
     print(f"\nDate: {state.today}")
     print(f"Article: {state.article.relative_to(ROOT) if state.article else 'MISSING'}")
-    print(f"World Brief: {found(state.world_brief)}" + (f" ({state.world_brief.name})" if state.world_brief else ""))
+    print(f"World Brief: {state.world_brief_status}" + (f" ({state.world_brief.name})" if state.world_brief else ""))
     print(f"Daily Editorial: {found(state.daily_editorial)}")
     print(f"Source Verification: {state.source_verification}")
     print(f"Source Verification Link: {state.source_verification_link}")
