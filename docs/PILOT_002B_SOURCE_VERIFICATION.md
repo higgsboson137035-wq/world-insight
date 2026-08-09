@@ -1,5 +1,6 @@
 # World Insight Pilot #2B — Source Verification
 
+- **Article:** `articles/pilot_002.md`
 - **確認日:** 2026-08-09
 - **入力:** World Brief 2026-08-08号、`docs/DAILY_EDITORIAL_2026-08-09.md`
 - **切替元:** Pilot #2「トルコ・パキスタン・サウジアラビアの相互防衛協定」（Source Verification判定C）
