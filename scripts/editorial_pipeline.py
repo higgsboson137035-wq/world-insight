@@ -12,6 +12,7 @@ import re
 import shutil
 from dataclasses import dataclass
 from datetime import date
+from difflib import SequenceMatcher
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -44,11 +45,20 @@ class PipelineState:
     next_action: str
 
 
-def latest_world_brief() -> Path | None:
+def latest_world_brief(on_or_before: str | None = None) -> Path | None:
     briefs = WORLD_BRIEF_ROOT / "briefs"
     if not briefs.is_dir():
         return None
-    candidates = sorted(briefs.glob("*.md"), reverse=True)
+    cutoff = date.fromisoformat(on_or_before) if on_or_before else None
+    candidates = []
+    for path in briefs.glob("*.md"):
+        try:
+            issue_date = date.fromisoformat(path.stem)
+        except ValueError:
+            continue
+        if cutoff is None or issue_date <= cutoff:
+            candidates.append(path)
+    candidates.sort(key=lambda path: path.stem, reverse=True)
     return candidates[0] if candidates else None
 
 
@@ -57,11 +67,73 @@ def world_brief_for_date(today: str) -> Path | None:
     return path if path.exists() else None
 
 
-def world_brief_state(today: str, latest: Path | None = None) -> str:
+def world_brief_state(today: str, selected: Path | None = None) -> str:
     """Distinguish today's brief from an older available issue."""
     if world_brief_for_date(today):
         return "FOUND"
-    return "STALE" if latest or latest_world_brief() else "MISSING"
+    return "STALE" if selected or latest_world_brief(today) else "MISSING"
+
+
+def selected_topic_value(text: str) -> str | None:
+    """Return a concrete topic recorded in the Selected Topic section."""
+    section = re.search(
+        r"^##\s+Step\s+3\s+[—-]\s+Selected Topic\s*$([\s\S]*?)(?=^##\s|\Z)",
+        text,
+        re.I | re.M,
+    )
+    if not section:
+        return None
+    match = re.search(
+        r"^[ \t]*-[ \t]*(?:\*\*)?(?:採用テーマ|Selected Topic)[ \t]*[:：](?:\*\*)?[ \t]*([^\n]*)$",
+        section.group(1),
+        re.I | re.M,
+    )
+    if not match:
+        return None
+    value = re.sub(r"^[`*_\s]+|[`*_\s]+$", "", match.group(1)).strip()
+    normalized = re.sub(r"[\s._-]+", "", value).casefold()
+    invalid = {
+        "", "—", "-", "tbd", "todo", "未定", "未選択", "placeholder",
+        "採用テーマ", "selected topic", "テーマ", "説明文", "見出し",
+    }
+    if normalized in {re.sub(r"[\s._-]+", "", item).casefold() for item in invalid}:
+        return None
+    # Template examples and labels are not editorial decisions.
+    if re.fullmatch(r"candidate\s*\d+(?:\s*[（(].*[）)])?", value, re.I):
+        return None
+    return value
+
+
+def selected_topic_present(text: str) -> bool:
+    """Recognize a concrete topic recorded in the Selected Topic section."""
+    return selected_topic_value(text) is not None
+
+
+def metadata_value(text: str, label: str) -> str | None:
+    """Read an explicit one-line Markdown metadata value."""
+    match = re.search(
+        rf"^[ \t]*-[ \t]*(?:\*\*)?{re.escape(label)}[ \t]*[:：](?:\*\*)?[ \t]*([^\n]+)$",
+        text,
+        re.I | re.M,
+    )
+    if not match:
+        return None
+    value = re.sub(r"^[`*_\s]+|[`*_\s]+$", "", match.group(1)).strip()
+    return value or None
+
+
+def topics_correspond(daily_topic: str, verification_topic: str) -> bool:
+    """Require strong literal overlap between two explicit topic labels."""
+    normalize = lambda value: re.sub(r"[^0-9a-z一-龠ぁ-んァ-ヶ]+", "", value.casefold())
+    daily = normalize(daily_topic)
+    verification = normalize(verification_topic)
+    if not daily or not verification:
+        return False
+    if daily == verification or daily in verification or verification in daily:
+        return True
+    shorter = min(len(daily), len(verification))
+    common = SequenceMatcher(None, daily, verification).find_longest_match().size
+    return common >= 12 and common / shorter >= 0.7
 
 
 def prepare_daily_editorial(today: str) -> Path:
@@ -95,11 +167,33 @@ def explicit_article_link(text: str, article: Path) -> bool:
     return bool(re.search(rf"(?:\*\*)?(?:Article|記事|対象記事)(?:\*\*)?\s*[:：]\s*(?:\*\*)?\s*`?{re.escape(relative)}`?", text, re.I))
 
 
-def source_verification_status(article: Path | None) -> tuple[str, str, Path | None, str]:
+def topic_verification_matches(today: str, daily_text: str, candidates: list[Path]) -> list[tuple[Path, str]]:
+    """Find records explicitly matching the daily date and selected topic."""
+    daily_topic = selected_topic_value(daily_text)
+    if daily_topic is None:
+        return []
+    matches = []
+    for path in candidates:
+        text = path.read_text(encoding="utf-8")
+        verification_date = metadata_value(text, "Date")
+        verification_topic = metadata_value(text, "Selected Topic")
+        if (verification_date == today and verification_topic
+                and topics_correspond(daily_topic, verification_topic)):
+            matches.append((path, verdict(text)))
+    return matches
+
+
+def source_verification_status(today: str, daily_text: str, article: Path | None) -> tuple[str, str, Path | None, str]:
     """Return verdict, link state, linked file, and unlinked candidate signal."""
-    if article is None:
-        return "NOT_STARTED", "UNRESOLVED", None, "NOT_STARTED"
     candidates = sorted((ROOT / "docs").glob("*SOURCE_VERIFICATION*.md"), reverse=True)
+    if article is None:
+        topic_linked = topic_verification_matches(today, daily_text, candidates)
+        if len(topic_linked) == 1:
+            path, result = topic_linked[0]
+            return result, "TOPIC_VERIFIED", path, result
+        if len(topic_linked) > 1:
+            return "UNRESOLVED", "UNRESOLVED", None, "AMBIGUOUS"
+        return "NOT_STARTED", "UNRESOLVED", None, "NOT_STARTED"
     linked = [(path, verdict(path.read_text(encoding="utf-8")))
               for path in candidates if explicit_article_link(path.read_text(encoding="utf-8"), article)]
     if len(linked) == 1:
@@ -107,6 +201,14 @@ def source_verification_status(article: Path | None) -> tuple[str, str, Path | N
         return result, "VERIFIED", path, result
     if len(linked) > 1:
         # Multiple explicit records need a human to resolve which one governs.
+        return "UNRESOLVED", "UNRESOLVED", None, "AMBIGUOUS"
+    topic_linked = topic_verification_matches(today, daily_text, candidates)
+    if len(topic_linked) == 1:
+        path, result = topic_linked[0]
+        # Once an article exists, topic metadata identifies the one candidate
+        # record but cannot replace the required explicit Article link.
+        return "UNRESOLVED", "UNRESOLVED", path, result
+    if len(topic_linked) > 1:
         return "UNRESOLVED", "UNRESOLVED", None, "AMBIGUOUS"
     likely = [path for path in candidates if article.stem.lower() in path.name.lower()]
     likely_verdicts = {verdict(path.read_text(encoding="utf-8")) for path in likely}
@@ -127,8 +229,8 @@ def section_present(text: str, title: str) -> bool:
     return bool(re.search(rf"^##\s+{re.escape(title)}\s*$", text, re.M))
 
 
-def evaluate_quality(text: str) -> tuple[str, str]:
-    """Read explicit article signals; do not infer semantic quality."""
+def evaluate_quality(text: str, review_quality: dict[str, str] | None = None) -> tuple[str, str]:
+    """Prefer a completed independent review, then fall back to article signals."""
     insight = "NOT_RECORDED"
     take = "NOT_RECORDED"
     if re.search(r"\*\*Insight Shift:\*\*\s*PASS", text, re.I) and section_present(text, "Insight Shift"):
@@ -139,24 +241,65 @@ def evaluate_quality(text: str) -> tuple[str, str]:
         take = "PASS"
     elif section_present(text, "Take One Thing"):
         take = "NEEDS_WORK"
+    review_quality = review_quality or {}
+    if review_quality.get("Insight Shift") in {"A", "B", "C"}:
+        insight = review_quality["Insight Shift"]
+    if review_quality.get("Take One Thing") in {"PASS", "NEEDS_WORK", "FAIL"}:
+        take = review_quality["Take One Thing"]
     return insight, take
 
 
-def editorial_review_status(article: Path | None) -> str:
-    """Only an independent, explicitly linked review can be COMPLETE."""
+def review_field_value(text: str, label: str) -> str | None:
+    """Read an explicit review field in metadata or Markdown-list form."""
+    match = re.search(
+        rf"^[ \t]*(?:-[ \t]*)?(?:\*\*)?{re.escape(label)}(?:\*\*)?[ \t]*[:：](?:\*\*)?[ \t]*([^\n]+)$",
+        text,
+        re.I | re.M,
+    )
+    if not match:
+        return None
+    value = re.sub(r"^[`*_\s]+|[`*_\s]+$", "", match.group(1)).strip()
+    return value or None
+
+
+def editorial_review_record(article: Path | None) -> tuple[str, dict[str, str]]:
+    """Return status and explicit quality values from one linked review record."""
     if article is None:
-        return "UNRESOLVED"
-    records = []
+        return "UNRESOLVED", {}
+    records: list[tuple[str, str]] = []
     for path in sorted((ROOT / "docs").glob("*REVIEW*.md"), reverse=True):
         text = path.read_text(encoding="utf-8")
         if not explicit_article_link(text, article):
             continue
-        match = re.search(r"(?:Editorial Review|Review Status)\s*[:：]\s*(COMPLETE|PENDING|UNRESOLVED)", text, re.I)
-        if match:
-            records.append(match.group(1).upper())
-    if len(records) == 1:
-        return records[0]
-    return "UNRESOLVED"
+        status = review_field_value(text, "Review Status") or review_field_value(text, "Editorial Review")
+        if status and status.upper() in {"COMPLETE", "PENDING", "UNRESOLVED"}:
+            records.append((status.upper(), text))
+    if len(records) != 1:
+        return "UNRESOLVED", {}
+    status, text = records[0]
+    if status != "COMPLETE":
+        return status, {}
+
+    allowed = {
+        "Insight Shift": {"A", "B", "C"},
+        "Take One Thing": {"PASS", "NEEDS_WORK", "FAIL"},
+        "Is it true?": {"PASS", "NEEDS_WORK", "FAIL"},
+        "Is it fair?": {"PASS", "NEEDS_WORK", "FAIL"},
+        "Is it useful?": {"PASS", "NEEDS_WORK", "FAIL"},
+    }
+    quality: dict[str, str] = {}
+    for label, accepted in allowed.items():
+        value = review_field_value(text, label)
+        if value:
+            normalized = re.sub(r"[\s-]+", "_", value).upper()
+            if normalized in accepted:
+                quality[label] = normalized
+    return status, quality
+
+
+def editorial_review_status(article: Path | None) -> str:
+    """Only one independent, explicitly linked review determines status."""
+    return editorial_review_record(article)[0]
 
 
 def manual_record(today: str, article: Path | None) -> dict[str, str]:
@@ -178,7 +321,13 @@ def manual_record(today: str, article: Path | None) -> dict[str, str]:
 
 
 def publish_readiness(state: PipelineState) -> tuple[str, str]:
-    if state.source_verification_link != "VERIFIED" or state.source_verification in {"UNRESOLVED", "HOLD_C", "NOT_STARTED"}:
+    if state.source_verification == "HOLD_C":
+        return "BLOCKED", "Select a fallback candidate."
+    if state.source_verification == "NOT_STARTED":
+        return "BLOCKED", "Start Source Verification for the selected topic."
+    if state.article is None and state.source_verification in {"PASS_A", "PASS_B"}:
+        return "BLOCKED", "Draft the article."
+    if state.source_verification_link != "VERIFIED" or state.source_verification == "UNRESOLVED":
         return "BLOCKED", "Add an explicit article-to-source link and resolve Source Verification."
     if state.insight_shift == "C" or state.take_one_thing == "FAIL":
         return "BLOCKED", "Resolve the blocked quality gate before publication."
@@ -196,18 +345,18 @@ def publish_readiness(state: PipelineState) -> tuple[str, str]:
 
 
 def inspect(today: str, prepare: bool = True) -> PipelineState:
-    brief = latest_world_brief()
+    brief = world_brief_for_date(today) or latest_world_brief(today)
     daily = prepare_daily_editorial(today) if prepare else ROOT / "docs" / f"DAILY_EDITORIAL_{today}.md"
     daily_text = daily.read_text(encoding="utf-8") if daily.exists() else ""
     article = find_article(today)
     article_text = article.read_text(encoding="utf-8") if article else ""
-    insight, take = evaluate_quality(article_text)
-    source, source_link, source_file, source_signal = source_verification_status(article)
-    review = editorial_review_status(article)
+    source, source_link, source_file, source_signal = source_verification_status(today, daily_text, article)
+    review, review_quality = editorial_review_record(article)
+    insight, take = evaluate_quality(article_text, review_quality)
     manual = manual_record(today, article)
     build_ready = all((ROOT / path).exists() for path in ("index.html", "archive.html")) and article is not None and (ROOT / "archive" / f"{today}.html").exists()
     required_sections = ("Today's Question", "Quick Choices", "Human Context", "Decision Space", "Insight Shift", "Take One Thing")
-    candidate_selected = bool(re.search(r"採用テーマ\s*[:：]\s*\S+", daily_text))
+    candidate_selected = selected_topic_present(daily_text)
     seeds_present = "Insight Shift Seed" in daily_text and "Take One Thing Seed" in daily_text
     editorial_ready = bool(candidate_selected and seeds_present and article and all(section_present(article_text, section) for section in required_sections) and source in {"PASS_A", "PASS_B"} and source_link == "VERIFIED")
     state = PipelineState(today, brief, world_brief_state(today, brief), daily, source, source_link, source_file, source_signal, article, article_text, review, insight, take,

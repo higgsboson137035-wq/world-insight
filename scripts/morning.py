@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import re
 import sys
 from datetime import date
 from pathlib import Path
@@ -16,6 +15,7 @@ from editorial_pipeline import (  # noqa: E402
     PipelineState,
     inspect,
     prepare_daily_editorial,
+    selected_topic_present,
 )
 
 
@@ -23,7 +23,7 @@ def selected_topic(state: PipelineState) -> bool:
     if not state.daily_editorial.exists():
         return False
     text = state.daily_editorial.read_text(encoding="utf-8")
-    return bool(re.search(r"採用テーマ\s*[:：]\s*\S+", text))
+    return selected_topic_present(text)
 
 
 def next_action(state: PipelineState, has_topic: bool) -> str:
@@ -37,12 +37,27 @@ def next_action(state: PipelineState, has_topic: bool) -> str:
         return "Complete Candidate Topics and Scorecard."
     if state.source_verification == "HOLD_C" or state.source_verification_signal == "HOLD_C":
         return "Select a fallback candidate."
-    if state.source_verification_link != "VERIFIED":
-        return "Resolve the article-to-source verification link."
-    if state.source_verification == "NOT_STARTED":
-        return "Verify sources for the selected topic."
-    if not state.article:
-        return "Draft the article after Source Verification passes."
+    if not state.article and state.source_verification == "NOT_STARTED":
+        return "Start Source Verification for the selected topic."
+    if state.article and (
+        state.source_verification == "NOT_STARTED" or (
+        state.source_verification == "UNRESOLVED"
+        and state.source_verification_signal == "NOT_STARTED"
+        )
+    ):
+        return "Start or resolve Source Verification."
+    if state.source_verification_signal == "AMBIGUOUS":
+        return "Resolve multiple Source Verification records."
+    if not state.article and (
+        state.source_verification in {"PASS_A", "PASS_B"}
+        or state.source_verification_signal in {"PASS_A", "PASS_B"}
+    ):
+        return "Draft the article."
+    if state.article and state.source_verification_link != "VERIFIED" and (
+        state.source_verification in {"PASS_A", "PASS_B"}
+        or state.source_verification_signal in {"PASS_A", "PASS_B"}
+    ):
+        return "Link the article to its Source Verification record."
     if state.editorial_review in {"UNRESOLVED", "PENDING"}:
         return "Complete independent Editorial Review."
     if state.insight_shift in {"B", "NEEDS_HUMAN_REVIEW"}:
