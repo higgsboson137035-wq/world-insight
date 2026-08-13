@@ -32,15 +32,22 @@ class PipelineState:
     article: Path | None
     article_text: str
     editorial_review: str
+    review_decision: str
+    required_fixes: str
     insight_shift: str
     take_one_thing: str
     editorial_readiness: str
     build: str
+    human_read: str
+    technical_validation: str
     local_preview: str
     safari: str
     chrome: str
     git_diff_review: str
     final_approval: str
+    daily_result: str
+    fallback_attempts: int
+    no_publish_confirmation: str
     publish_readiness: str
     next_action: str
 
@@ -262,10 +269,29 @@ def review_field_value(text: str, label: str) -> str | None:
     return value or None
 
 
-def editorial_review_record(article: Path | None) -> tuple[str, dict[str, str]]:
+def final_decision_value(text: str) -> str | None:
+    value = review_field_value(text, "Final Decision")
+    if not value:
+        return None
+    match = re.match(r"([ABC])(?:\b|\s|[—-])", value.strip(), re.I)
+    return match.group(1).upper() if match else None
+
+
+def required_fixes_value(text: str) -> str:
+    value = review_field_value(text, "Required Fixes Status")
+    if value:
+        normalized = re.sub(r"[\s-]+", "_", value).upper()
+        if normalized in {"NONE", "RESOLVED", "OPEN"}:
+            return normalized
+    if re.search(r"^##\s+Required Fixes\s+[—-]\s+Resolved\s*$", text, re.I | re.M):
+        return "RESOLVED"
+    return "NOT_RECORDED"
+
+
+def editorial_review_record(article: Path | None) -> tuple[str, str, str, dict[str, str]]:
     """Return status and explicit quality values from one linked review record."""
     if article is None:
-        return "UNRESOLVED", {}
+        return "UNRESOLVED", "NOT_RECORDED", "NOT_RECORDED", {}
     records: list[tuple[str, str]] = []
     for path in sorted((ROOT / "docs").glob("*REVIEW*.md"), reverse=True):
         text = path.read_text(encoding="utf-8")
@@ -275,14 +301,18 @@ def editorial_review_record(article: Path | None) -> tuple[str, dict[str, str]]:
         if status and status.upper() in {"COMPLETE", "PENDING", "UNRESOLVED"}:
             records.append((status.upper(), text))
     if len(records) != 1:
-        return "UNRESOLVED", {}
+        return "UNRESOLVED", "NOT_RECORDED", "NOT_RECORDED", {}
     status, text = records[0]
+    decision = final_decision_value(text)
+    fixes = required_fixes_value(text)
     if status != "COMPLETE":
-        return status, {}
+        return status, decision or "NOT_RECORDED", fixes, {}
 
     allowed = {
         "Insight Shift": {"A", "B", "C"},
+        "Thinking Trap": {"PASS", "NEEDS_WORK", "FAIL"},
         "Take One Thing": {"PASS", "NEEDS_WORK", "FAIL"},
+        "A/B/C Fairness": {"PASS", "NEEDS_WORK", "FAIL"},
         "Is it true?": {"PASS", "NEEDS_WORK", "FAIL"},
         "Is it fair?": {"PASS", "NEEDS_WORK", "FAIL"},
         "Is it useful?": {"PASS", "NEEDS_WORK", "FAIL"},
@@ -294,7 +324,18 @@ def editorial_review_record(article: Path | None) -> tuple[str, dict[str, str]]:
             normalized = re.sub(r"[\s-]+", "_", value).upper()
             if normalized in accepted:
                 quality[label] = normalized
-    return status, quality
+    quality_needs_work = any(value in {"NEEDS_WORK", "FAIL"} for value in quality.values())
+    if decision == "C":
+        review_state = "HOLD"
+    elif decision == "B" or fixes == "OPEN" or quality_needs_work:
+        review_state = "NEEDS_FIX"
+    elif decision == "A":
+        review_state = "PASS"
+    else:
+        # Backward compatibility: old COMPLETE records without Final Decision
+        # retain their historic completion semantics.
+        review_state = "PASS"
+    return review_state, decision or "LEGACY_COMPLETE", fixes, quality
 
 
 def editorial_review_status(article: Path | None) -> str:
@@ -302,8 +343,55 @@ def editorial_review_status(article: Path | None) -> str:
     return editorial_review_record(article)[0]
 
 
+def daily_metadata(daily_text: str) -> tuple[str, int, str]:
+    result = (metadata_value(daily_text, "Daily Result") or "IN_PROGRESS").upper()
+    if result not in {"IN_PROGRESS", "NO_PUBLISH", "READY_TO_PUBLISH", "PUBLISHED"}:
+        result = "IN_PROGRESS"
+    attempts_record = metadata_value(daily_text, "Fallback Attempts")
+    attempts_value = attempts_record or ("1" if "Fallback Candidate Selection" in daily_text else "0")
+    try:
+        attempts = max(0, int(attempts_value))
+    except ValueError:
+        attempts = 0
+    confirmation = (metadata_value(daily_text, "NO_PUBLISH Confirmation") or "PENDING").upper()
+    return result, attempts, confirmation
+
+
+def build_is_fresh(article: Path | None) -> bool:
+    """Require generated files to be at least as new as every relevant input."""
+    if article is None:
+        return False
+    date_match = re.search(r"^\*\*Date:\*\*\s*(\d{4}-\d{2}-\d{2})\s*$", article.read_text(encoding="utf-8"), re.M)
+    if not date_match:
+        return False
+    article_html = ROOT / "archive" / f"{date_match.group(1)}.html"
+    index_html = ROOT / "index.html"
+    archive_html = ROOT / "archive.html"
+    outputs = (article_html, index_html, archive_html)
+    if not all(path.exists() for path in outputs):
+        return False
+
+    build_script = ROOT / "scripts" / "build.py"
+    article_inputs = (article, build_script, ROOT / "templates" / "insight.html")
+    all_articles = tuple((ROOT / "articles").glob("*.md"))
+    index_inputs = all_articles + (build_script, ROOT / "templates" / "index.html")
+    archive_inputs = all_articles + (build_script, ROOT / "templates" / "archive.html")
+    groups = (
+        (article_html, article_inputs),
+        (index_html, index_inputs),
+        (archive_html, archive_inputs),
+    )
+    for output, inputs in groups:
+        if not inputs or not all(path.exists() for path in inputs):
+            return False
+        if output.stat().st_mtime_ns < max(path.stat().st_mtime_ns for path in inputs):
+            return False
+    return True
+
+
 def manual_record(today: str, article: Path | None) -> dict[str, str]:
     defaults = {
+        "Human Read": "PENDING", "Technical Validation": "NOT_STARTED",
         "Local Preview": "NOT_CHECKED", "Safari": "NOT_CHECKED", "Chrome": "NOT_CHECKED",
         "Git Diff Review": "NOT_CHECKED", "Final Approval": "PENDING",
     }
@@ -317,24 +405,45 @@ def manual_record(today: str, article: Path | None) -> dict[str, str]:
         match = re.search(rf"^{re.escape(key)}\s*[:：]\s*([^\n]+)", text, re.I | re.M)
         if match:
             defaults[key] = match.group(1).strip().upper()
+    # Old Pilot and 2026-08-13 records predate the explicit consolidated fields.
+    if defaults["Human Read"] == "PENDING" and defaults["Local Preview"] == "COMPLETE":
+        defaults["Human Read"] = "COMPLETE"
+    if defaults["Technical Validation"] == "NOT_STARTED" and defaults["Git Diff Review"] == "COMPLETE":
+        defaults["Technical Validation"] = "PASS"
     return defaults
 
 
 def publish_readiness(state: PipelineState) -> tuple[str, str]:
+    if state.daily_result == "NO_PUBLISH":
+        if state.no_publish_confirmation == "CONFIRMED":
+            return "NOT_APPLICABLE", "None — editorial day completed without publication."
+        return "NEEDS_NO_PUBLISH_CONFIRMATION", "Confirm the NO_PUBLISH editorial decision."
+    if state.daily_result == "PUBLISHED":
+        return "PUBLISHED", "None — publication is already recorded."
     if state.source_verification == "HOLD_C":
-        return "BLOCKED", "Select a fallback candidate."
+        if state.fallback_attempts >= 1:
+            return "NEEDS_NO_PUBLISH_DECISION", "Record and confirm NO_PUBLISH; the fallback limit is reached."
+        return "BLOCKED", "Select the single allowed fallback candidate."
     if state.source_verification == "NOT_STARTED":
         return "BLOCKED", "Start Source Verification for the selected topic."
     if state.article is None and state.source_verification in {"PASS_A", "PASS_B"}:
         return "BLOCKED", "Draft the article."
     if state.source_verification_link != "VERIFIED" or state.source_verification == "UNRESOLVED":
         return "BLOCKED", "Add an explicit article-to-source link and resolve Source Verification."
+    if state.editorial_review == "NEEDS_FIX":
+        return "NEEDS_REVIEW", "Apply only the required editorial fixes, then re-review."
+    if state.editorial_review == "HOLD":
+        return "NEEDS_NO_PUBLISH_DECISION", "Record and confirm NO_PUBLISH after Editorial Review C."
     if state.insight_shift == "C" or state.take_one_thing == "FAIL":
         return "BLOCKED", "Resolve the blocked quality gate before publication."
     if state.editorial_review in {"UNRESOLVED", "PENDING"} or state.insight_shift in {"B", "NEEDS_HUMAN_REVIEW"} or state.take_one_thing == "NEEDS_WORK":
         return "NEEDS_REVIEW", "Complete the independent Editorial Review and quality gates."
+    if state.human_read != "COMPLETE":
+        return "NEEDS_HUMAN_READ", "Complete the human meaning and reading-quality review."
     if state.build != "READY" or state.local_preview != "COMPLETE" or state.safari != "PASS" or state.chrome != "PASS":
         return "NEEDS_PREVIEW", "Complete Build and Safari/Chrome Local Preview checks."
+    if state.technical_validation != "PASS":
+        return "NEEDS_TECHNICAL_VALIDATION", "Complete the technical validation record."
     if state.git_diff_review != "COMPLETE":
         return "NEEDS_GIT_REVIEW", "Complete the human Git Diff Review."
     if state.final_approval == "REJECTED":
@@ -351,18 +460,21 @@ def inspect(today: str, prepare: bool = True) -> PipelineState:
     article = find_article(today)
     article_text = article.read_text(encoding="utf-8") if article else ""
     source, source_link, source_file, source_signal = source_verification_status(today, daily_text, article)
-    review, review_quality = editorial_review_record(article)
+    review, review_decision, required_fixes, review_quality = editorial_review_record(article)
     insight, take = evaluate_quality(article_text, review_quality)
     manual = manual_record(today, article)
-    build_ready = all((ROOT / path).exists() for path in ("index.html", "archive.html")) and article is not None and (ROOT / "archive" / f"{today}.html").exists()
+    daily_result, fallback_attempts, no_publish_confirmation = daily_metadata(daily_text)
+    build_ready = build_is_fresh(article)
     required_sections = ("Today's Question", "Quick Choices", "Human Context", "Decision Space", "Insight Shift", "Take One Thing")
     candidate_selected = selected_topic_present(daily_text)
     seeds_present = "Insight Shift Seed" in daily_text and "Take One Thing Seed" in daily_text
     editorial_ready = bool(candidate_selected and seeds_present and article and all(section_present(article_text, section) for section in required_sections) and source in {"PASS_A", "PASS_B"} and source_link == "VERIFIED")
-    state = PipelineState(today, brief, world_brief_state(today, brief), daily, source, source_link, source_file, source_signal, article, article_text, review, insight, take,
+    state = PipelineState(today, brief, world_brief_state(today, brief), daily, source, source_link, source_file, source_signal, article, article_text, review, review_decision, required_fixes, insight, take,
                           "READY" if editorial_ready else "NOT_READY", "READY" if build_ready else "NOT_READY",
-                          manual["Local Preview"], manual["Safari"], manual["Chrome"], manual["Git Diff Review"], manual["Final Approval"], "", "")
+                          manual["Human Read"], manual["Technical Validation"], manual["Local Preview"], manual["Safari"], manual["Chrome"], manual["Git Diff Review"], manual["Final Approval"], daily_result, fallback_attempts, no_publish_confirmation, "", "")
     state.publish_readiness, state.next_action = publish_readiness(state)
+    if state.daily_result == "IN_PROGRESS" and state.publish_readiness == "READY_TO_PUBLISH":
+        state.daily_result = "READY_TO_PUBLISH"
     return state
 
 
@@ -382,18 +494,32 @@ def print_state(state: PipelineState) -> None:
     elif state.source_verification_signal != "NOT_STARTED":
         print(f"Source Verification Signal: {state.source_verification_signal} (unlinked; not a gate pass)")
     print(f"Editorial Review: {state.editorial_review}")
+    print(f"Review Decision: {state.review_decision}")
+    print(f"Required Fixes: {state.required_fixes}")
     print(f"Insight Shift: {state.insight_shift}")
     print(f"Take One Thing: {state.take_one_thing}")
     print(f"Editorial Readiness: {state.editorial_readiness}")
     print(f"Build: {state.build}")
+    print(f"Human Read: {state.human_read}")
+    print(f"Technical Validation: {state.technical_validation}")
     print(f"Local Preview: {state.local_preview}")
     print(f"Safari: {state.safari}")
     print(f"Chrome: {state.chrome}")
     print(f"Git Diff Review: {state.git_diff_review}")
     print(f"Final Approval: {state.final_approval}")
+    print(f"Daily Result: {state.daily_result}")
+    print(f"Fallback Attempts: {state.fallback_attempts}")
     print(f"Publish Readiness: {state.publish_readiness}")
     print(f"Next Action: {state.next_action}")
-    print("Publish: MANUAL APPROVAL REQUIRED")
+    if state.daily_result == "NO_PUBLISH" and state.no_publish_confirmation == "CONFIRMED":
+        publish_label = "NO_PUBLISH"
+    elif state.publish_readiness == "READY_TO_PUBLISH":
+        publish_label = "READY"
+    elif state.publish_readiness == "PUBLISHED":
+        publish_label = "PUBLISHED"
+    else:
+        publish_label = "HOLD"
+    print(f"Publish: {publish_label}")
     print("\nHuman decisions are required for source mapping, review, quality, preview, diff review, and publication.")
 
 

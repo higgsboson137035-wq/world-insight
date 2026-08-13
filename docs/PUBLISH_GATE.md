@@ -1,36 +1,34 @@
-# World Insight Publish Gate Record
+# World Insight Daily Publish Record v1
 
-このファイルは、記事ごとの公開直前確認を人間が記録するためのテンプレートです。機械的な存在確認だけで `COMPLETE` や `APPROVED` に変更しません。
+通常日のHuman Read、Technical Validation、Final Approvalを一つにまとめる短い記録。機械的な存在確認だけでPASSやAPPROVEDへ変更しない。
 
 ```text
 Date: YYYY-MM-DD
-Article: articles/pilot_002.md
+Article: articles/YYYY-MM-DD-slug.md
+Daily Result: IN_PROGRESS
 
-Source Verification Link: VERIFIED
-Editorial Review: COMPLETE
-Insight Shift: A
-Take One Thing: PASS
-Build: READY
+Human Read: PENDING
+Human Read Note:
+Local Preview: NOT_CHECKED
+Safari: NOT_CHECKED
+Chrome: NOT_CHECKED
 
-Local Preview: COMPLETE
-index.html: PASS
-archive.html: PASS
-Article HTML: PASS
-Safari: PASS
-Chrome: PASS
-CSS: PASS
-Horizontal Scroll: PASS
-Internal Links: PASS
-Insight Shift Visibility: PASS
+Technical Validation: NOT_STARTED
+Build: NEEDED
+Internal Links: NOT_CHECKED
+HTTP 200: NOT_CHECKED
+Git Diff Review: NOT_CHECKED
+Builder Idempotency: OPTIONAL
 
-Git Diff Review: COMPLETE
 Final Approval: PENDING
 ```
 
 ## 記録ルール
 
-- `Article:` は対象Markdownを明記する。日付やファイル名の類似だけでは対応付けない。
-- `Local Preview`、Safari / Chrome、`Git Diff Review` は実際に確認した人が記録する。
-- `Final Approval` は `PENDING` から始め、最終承認者が判断する。Pipelineは `APPROVED` に変更しない。
-- Source VerificationとEditorial Reviewは、それぞれ記事への明示的リンクを持つ記録が必要である。記事本文内の自己評価は独立Editorial Reviewの代わりにならない。
-
+- Human ReadではInsightの価値、再検討が起きるか、A/B/C、公平性、Thinking Trap、読み味を確認する。
+- Safari / Chromeは人間が実際に確認する。
+- Technical ValidationにはBuild、生成物、内部リンク、記事順、不確実性表示、不要URL、`git diff --check`を含める。
+- Git Diff Reviewは公開対象と意図しないファイル混入を確認する。
+- Builder/template/生成ロジックを変更していない通常日は二重BuildとSHA比較をOPTIONALとする。変更日は実施する。
+- Final Approvalは人間だけが`APPROVED`へ変更する。
+- NO_PUBLISH日はこのPublish記録を作らず、Daily Editorialの`NO_PUBLISH Confirmation: CONFIRMED`で正常終了する。

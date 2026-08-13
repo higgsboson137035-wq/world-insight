@@ -27,6 +27,12 @@ def selected_topic(state: PipelineState) -> bool:
 
 
 def next_action(state: PipelineState, has_topic: bool) -> str:
+    if state.daily_result == "NO_PUBLISH":
+        if state.no_publish_confirmation == "CONFIRMED":
+            return "None — editorial day completed without publication."
+        return "Confirm the NO_PUBLISH editorial decision."
+    if state.daily_result == "PUBLISHED":
+        return "None — publication is already recorded."
     if state.world_brief_status == "MISSING":
         return "Generate or confirm today's World Brief."
     if not state.daily_editorial.exists():
@@ -36,7 +42,9 @@ def next_action(state: PipelineState, has_topic: bool) -> str:
     if not has_topic:
         return "Complete Candidate Topics and Scorecard."
     if state.source_verification == "HOLD_C" or state.source_verification_signal == "HOLD_C":
-        return "Select a fallback candidate."
+        if state.fallback_attempts >= 1:
+            return "Record and confirm NO_PUBLISH; the fallback limit is reached."
+        return "Select the single allowed fallback candidate."
     if not state.article and state.source_verification == "NOT_STARTED":
         return "Start Source Verification for the selected topic."
     if state.article and (
@@ -58,6 +66,10 @@ def next_action(state: PipelineState, has_topic: bool) -> str:
         or state.source_verification_signal in {"PASS_A", "PASS_B"}
     ):
         return "Link the article to its Source Verification record."
+    if state.editorial_review == "NEEDS_FIX":
+        return "Apply only the required editorial fixes, then re-review."
+    if state.editorial_review == "HOLD":
+        return "Record and confirm NO_PUBLISH after Editorial Review C."
     if state.editorial_review in {"UNRESOLVED", "PENDING"}:
         return "Complete independent Editorial Review."
     if state.insight_shift in {"B", "NEEDS_HUMAN_REVIEW"}:
@@ -68,10 +80,14 @@ def next_action(state: PipelineState, has_topic: bool) -> str:
         return "Revise Take One Thing."
     if state.take_one_thing == "FAIL":
         return "Resolve the failed Take One Thing gate."
+    if state.human_read != "COMPLETE":
+        return "Complete the human meaning and reading-quality review."
     if state.build != "READY":
         return "Run: python3 scripts/build.py"
     if state.local_preview != "COMPLETE" or state.safari != "PASS" or state.chrome != "PASS":
         return "Complete Safari / Chrome Local Preview."
+    if state.technical_validation != "PASS":
+        return "Complete Technical Validation."
     if state.git_diff_review != "COMPLETE":
         return "Complete Git Diff Review."
     if state.final_approval == "PENDING":
@@ -82,10 +98,12 @@ def next_action(state: PipelineState, has_topic: bool) -> str:
 
 
 def remaining_gates(state: PipelineState) -> list[str]:
+    if state.daily_result in {"NO_PUBLISH", "PUBLISHED"}:
+        return [] if state.daily_result == "PUBLISHED" or state.no_publish_confirmation == "CONFIRMED" else ["NO_PUBLISH confirmation"]
     gates = []
     if state.source_verification_link != "VERIFIED":
         gates.append("Source Verification link")
-    if state.editorial_review != "COMPLETE":
+    if state.editorial_review != "PASS":
         gates.append("Editorial Review")
     if state.insight_shift not in {"A"}:
         gates.append("Insight Shift")
@@ -93,8 +111,12 @@ def remaining_gates(state: PipelineState) -> list[str]:
         gates.append("Take One Thing")
     if state.build != "READY":
         gates.append("Build")
+    if state.human_read != "COMPLETE":
+        gates.append("Human Read")
     if state.local_preview != "COMPLETE" or state.safari != "PASS" or state.chrome != "PASS":
         gates.append("Local Preview")
+    if state.technical_validation != "PASS":
+        gates.append("Technical Validation")
     if state.git_diff_review != "COMPLETE":
         gates.append("Git Diff Review")
     if state.final_approval != "APPROVED":
@@ -112,11 +134,16 @@ def print_morning(state: PipelineState) -> None:
         print(f"World Brief Path: {state.world_brief}")
     print(f"Daily Editorial: {'FOUND' if state.daily_editorial.exists() else 'MISSING'}")
     print(f"Selected Topic: {'FOUND' if topic else 'MISSING'}")
+    print(f"Daily Result: {state.daily_result}")
+    print(f"Fallback Attempts: {state.fallback_attempts}")
     print(f"Source Verification: {state.source_verification}")
     print(f"Article Draft: {'FOUND' if state.article else 'MISSING'}")
     print(f"Editorial Review: {state.editorial_review}")
+    print(f"Review Decision: {state.review_decision}")
     print(f"Insight Shift: {state.insight_shift}")
     print(f"Take One Thing: {state.take_one_thing}")
+    print(f"Human Read: {state.human_read}")
+    print(f"Technical Validation: {state.technical_validation}")
     build_label = state.build if state.build == "READY" else "NEEDED"
     print(f"Build: {build_label}")
     print(f"Publish Readiness: {state.publish_readiness}")
@@ -124,7 +151,15 @@ def print_morning(state: PipelineState) -> None:
     gates = remaining_gates(state)
     if gates:
         print("\nRemaining Gates: " + ", ".join(gates))
-    print("\nPublish: HOLD" if state.publish_readiness in {"BLOCKED", "NEEDS_REVIEW", "NEEDS_PREVIEW", "NEEDS_GIT_REVIEW", "WAITING_FOR_APPROVAL"} else "\nPublish: MANUAL APPROVAL REQUIRED")
+    if state.daily_result == "NO_PUBLISH" and state.no_publish_confirmation == "CONFIRMED":
+        publish_label = "NO_PUBLISH"
+    elif state.publish_readiness == "READY_TO_PUBLISH":
+        publish_label = "READY"
+    elif state.publish_readiness == "PUBLISHED":
+        publish_label = "PUBLISHED"
+    else:
+        publish_label = "HOLD"
+    print(f"\nPublish: {publish_label}")
 
 
 def main() -> None:

@@ -24,7 +24,7 @@ Build後の確認は、別システムではなくこのMorning Pipelineの公�
 ### 対応付けと品質Gate
 
 - Source Verificationは、検証文書内に`Article: articles/<対象>.md`のような明示的な対応がある場合だけ、そのA/B/Cを採用する。同じ日付やファイル名だけでは推測しない。対応がなければ`Source Verification Link: UNRESOLVED`とする。
-- Editorial Reviewは、対象記事を明記した独立レビュー記録の`Editorial Review: COMPLETE/PENDING/UNRESOLVED`だけで判定する。記事本文の「最終自己評価」は独立レビューと混同しない。
+- Editorial Reviewは対象記事を明記した独立記録を使う。v1では`Final Decision`と`Required Fixes Status`まで読み、A / B / Cを`PASS / NEEDS_FIX / HOLD`へ対応させる。旧記録の`COMPLETE`は読み取り互換を維持する。記事本文の自己評価は独立レビューと混同しない。
 - Insight Shiftは既存仕様どおりA/B/Cを人間が記録する。Aは通過、BはEditorial Reviewで要確認、CはBLOCKEDである。
 - Take One Thingは人間が`PASS/NEEDS_WORK/FAIL`を記録する。FAILは公開しない。
 
@@ -110,3 +110,57 @@ python3 -m http.server 8000
 ```
 
 `morning.py`はサーバーを起動しない。最終承認後のcommit、push、GitHub Pages操作も人間が行う。
+
+## Daily Workflow v1 — Phase 1
+
+### 正式目標
+
+- Quality over Frequencyを優先し、記事を公開しない`NO_PUBLISH`を正常終了として扱う。
+- World Brief生成後の人間アクティブ時間8〜10分を目標とする。品質Gateは時間のために省略しない。
+- 高リスク・複雑テーマでは時間より品質を優先する。
+
+### Daily Result
+
+`DAILY_EDITORIAL_YYYY-MM-DD.md`に次を明示する。
+
+```text
+- Daily Result: IN_PROGRESS | NO_PUBLISH | READY_TO_PUBLISH | PUBLISHED
+- Fallback Attempts: 0 | 1
+- NO_PUBLISH Confirmation: PENDING | CONFIRMED
+```
+
+`HOLD_C`は個別候補のSource Verification結果、`NO_PUBLISH`は当日の最終編集結果である。Initial TopicがHOLD_Cの場合、Fallbackは原則1回まで。FallbackもHOLD_Cまたは独自性不足なら第三候補へ自動移行せず、NO_PUBLISHを人間が確認する。
+
+NO_PUBLISH確認後はArticle、Build、index/archive変更、Publish記録、Final Approvalを要求しない。
+
+### Editorial Review状態
+
+Review記録は記事への明示リンクに加え、次を持つ。
+
+```text
+Review Status: COMPLETE
+Final Decision: A | B | C
+Required Fixes Status: NONE | OPEN | RESOLVED
+```
+
+- AかつFixがOPENでない: `PASS`。Buildへ進める。
+- BまたはFixがOPEN: `NEEDS_FIX`。Build前に局所修正と再Reviewを行う。
+- C: `HOLD`。BuildせずNO_PUBLISH判断へ進む。
+- 旧記録の`Review Status: COMPLETE`は読み取り互換を維持する。
+
+### Build freshness
+
+当日記事HTML、index、archiveの存在だけでREADYにしない。記事Markdown、全記事Markdown、対応template、`scripts/build.py`の`mtime_ns`を、それぞれの生成物と比較する。入力が一つでも新しければ`Build: NEEDED`とする。
+
+mtime比較はBuilderやHTMLへ新しいメタデータを書かずに導入でき、記事だけでなくtemplate・生成ロジック変更も検出する。時計の逆行や時刻保持コピーが疑われる運用へ移る場合は、Phase 2以降で入力hash記録を検討する。
+
+### 統合Gate
+
+- Independent ReviewにThree Tests、A/B/C Fairness、Insight Shift、Thinking Trap、Take One Thing、Reader Transformation、Required Fixesを統合する。
+- Publish記録にHuman Read、Safari、Chrome、Technical Validation、Git Diff Review、Final Approvalを統合する。
+- Builder/template/生成ロジックを変更していない通常日は二重Build＋SHA比較をOPTIONALとする。変更日は実施する。
+- Final ApprovalがAPPROVEDで全Gateを通過した場合、`Publish: READY`と表示する。
+
+### Phase 1で自動化しないもの
+
+Candidate生成、Source Verification、Draft、Review、Review B修正、Technical Validation一括実行、Git公開は自動化しない。これらはPhase 2以降の検討対象である。
