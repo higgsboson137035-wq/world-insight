@@ -6,6 +6,7 @@ from __future__ import annotations
 import html
 import re
 from dataclasses import dataclass
+from html.parser import HTMLParser
 from pathlib import Path
 
 try:
@@ -41,6 +42,10 @@ class Article:
     @property
     def url(self) -> str:
         return f"archive/{self.date}.html"
+
+    @property
+    def reading_time(self) -> str:
+        return self.front.get("Estimated Reading Time") or "10〜12分"
 
 
 def parse_front(text: str) -> dict[str, str]:
@@ -101,7 +106,7 @@ def extract_summary(text: str) -> str:
     block = re.sub(r"^###\s+.*?$", "", block, flags=re.M)
     block = re.sub(r"^[-*]\s+", "", block, flags=re.M)
     paragraphs = [p.strip() for p in re.split(r"\n\s*\n", block) if p.strip()]
-    return paragraphs[0] if paragraphs else ""
+    return markdown_to_plain_text(paragraphs[0]) if paragraphs else ""
 
 
 def load_articles() -> list[Article]:
@@ -117,6 +122,33 @@ def load_articles() -> list[Article]:
 
 def md_to_html(value: str) -> str:
     return markdown.markdown(value, extensions=["extra", "sane_lists"], output_format="html5")
+
+
+class _PlainTextParser(HTMLParser):
+    """Collect visible text from rendered Markdown without preserving markup or URLs."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+
+    def handle_data(self, data: str) -> None:
+        self.parts.append(data)
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "br":
+            self.parts.append(" ")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in {"p", "li", "blockquote", "div"}:
+            self.parts.append(" ")
+
+
+def markdown_to_plain_text(value: str) -> str:
+    """Render Markdown, then return normalized visible text for the index card."""
+    parser = _PlainTextParser()
+    parser.feed(md_to_html(value))
+    parser.close()
+    return re.sub(r"\s+", " ", "".join(parser.parts)).strip()
 
 
 def h3_blocks(value: str) -> list[str]:
@@ -229,6 +261,7 @@ def render_article(article: Article) -> str:
     values = {
         "title": html.escape(article.title),
         "date": html.escape(article.date),
+        "reading_time": html.escape(article.reading_time),
         "question": html.escape(article.question),
         "body": "".join(body_parts),
     }

@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from editorial_pipeline import (  # noqa: E402
     PipelineState,
     inspect,
+    insight_shift_gate_passed,
     prepare_daily_editorial,
     selected_topic_present,
 )
@@ -72,10 +73,12 @@ def next_action(state: PipelineState, has_topic: bool) -> str:
         return "Record and confirm NO_PUBLISH after Editorial Review C."
     if state.editorial_review in {"UNRESOLVED", "PENDING"}:
         return "Complete independent Editorial Review."
-    if state.insight_shift in {"B", "NEEDS_HUMAN_REVIEW"}:
+    if not insight_shift_gate_passed(state.insight_shift, state.insight_shift_review):
+        if state.insight_shift_review == "INVALID":
+            return "Resolve the invalid Insight Shift Review record."
+        if state.insight_shift == "C":
+            return "Revise Insight Shift before continuing."
         return "Review Insight Shift before publication."
-    if state.insight_shift == "C":
-        return "Revise Insight Shift before continuing."
     if state.take_one_thing == "NEEDS_WORK":
         return "Revise Take One Thing."
     if state.take_one_thing == "FAIL":
@@ -105,7 +108,7 @@ def remaining_gates(state: PipelineState) -> list[str]:
         gates.append("Source Verification link")
     if state.editorial_review != "PASS":
         gates.append("Editorial Review")
-    if state.insight_shift not in {"A"}:
+    if not insight_shift_gate_passed(state.insight_shift, state.insight_shift_review):
         gates.append("Insight Shift")
     if state.take_one_thing != "PASS":
         gates.append("Take One Thing")
@@ -141,6 +144,7 @@ def print_morning(state: PipelineState) -> None:
     print(f"Editorial Review: {state.editorial_review}")
     print(f"Review Decision: {state.review_decision}")
     print(f"Insight Shift: {state.insight_shift}")
+    print(f"Insight Shift Review: {state.insight_shift_review}")
     print(f"Take One Thing: {state.take_one_thing}")
     print(f"Human Read: {state.human_read}")
     print(f"Technical Validation: {state.technical_validation}")

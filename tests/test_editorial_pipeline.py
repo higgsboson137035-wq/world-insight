@@ -52,6 +52,19 @@ Required Fixes Status: {fixes}
             encoding="utf-8",
         )
 
+    def write_publish_record(self, root, article, insight_shift_review=None):
+        field = "" if insight_shift_review is None else f"Insight Shift Review: {insight_shift_review}\n"
+        (root / "docs" / "PUBLISH_2026-08-14.md").write_text(
+            f"Article: articles/{article.name}\n{field}", encoding="utf-8"
+        )
+
+    def state_with_daily(self, **changes):
+        temporary, root, _ = self.make_root()
+        self.addCleanup(temporary.cleanup)
+        daily = root / "docs" / "DAILY_EDITORIAL_2026-08-14.md"
+        daily.write_text("daily\n", encoding="utf-8")
+        return self.base_state(daily_editorial=daily, **changes)
+
     def test_review_a_passes(self):
         temporary, root, article = self.make_root()
         self.addCleanup(temporary.cleanup)
@@ -64,6 +77,57 @@ Required Fixes Status: {fixes}
         workflow = self.base_state(editorial_review=state, build="NOT_READY", daily_editorial=daily)
         self.assertEqual(pipeline.publish_readiness(workflow)[0], "NEEDS_PREVIEW")
         self.assertEqual(morning.next_action(workflow, True), "Run: python3 scripts/build.py")
+
+    def test_insight_shift_a_passes_without_or_with_pending_review(self):
+        for review in ("PENDING", "APPROVED", "INVALID"):
+            with self.subTest(review=review):
+                state = self.state_with_daily(insight_shift="A", insight_shift_review=review, build="NOT_READY")
+                self.assertTrue(pipeline.insight_shift_gate_passed(state.insight_shift, state.insight_shift_review))
+                self.assertEqual(morning.next_action(state, True), "Run: python3 scripts/build.py")
+
+    def test_insight_shift_b_requires_explicit_approval(self):
+        for review in ("PENDING", "INVALID"):
+            with self.subTest(review=review):
+                state = self.state_with_daily(insight_shift="B", insight_shift_review=review)
+                self.assertFalse(pipeline.insight_shift_gate_passed(state.insight_shift, state.insight_shift_review))
+                self.assertEqual(pipeline.publish_readiness(state)[0], "NEEDS_REVIEW")
+        pending = self.state_with_daily(insight_shift="B", insight_shift_review="PENDING")
+        self.assertEqual(morning.next_action(pending, True), "Review Insight Shift before publication.")
+        invalid = self.state_with_daily(insight_shift="B", insight_shift_review="INVALID")
+        self.assertEqual(morning.next_action(invalid, True), "Resolve the invalid Insight Shift Review record.")
+
+    def test_insight_shift_b_approved_passes_only_that_gate(self):
+        state = self.state_with_daily(
+            insight_shift="B", insight_shift_review="APPROVED",
+            human_read="PENDING", build="NOT_READY",
+        )
+        self.assertTrue(pipeline.insight_shift_gate_passed(state.insight_shift, state.insight_shift_review))
+        self.assertEqual(morning.next_action(state, True), "Complete the human meaning and reading-quality review.")
+        self.assertEqual(pipeline.publish_readiness(state)[0], "NEEDS_HUMAN_READ")
+        state.human_read = "COMPLETE"
+        self.assertEqual(morning.next_action(state, True), "Run: python3 scripts/build.py")
+
+    def test_c_and_unreviewed_article_signal_never_pass_with_approval(self):
+        for insight in ("C", "NEEDS_HUMAN_REVIEW"):
+            with self.subTest(insight=insight):
+                state = self.base_state(insight_shift=insight, insight_shift_review="APPROVED")
+                self.assertFalse(pipeline.insight_shift_gate_passed(insight, "APPROVED"))
+                expected = "BLOCKED" if insight == "C" else "NEEDS_REVIEW"
+                self.assertEqual(pipeline.publish_readiness(state)[0], expected)
+
+    def test_publish_record_insight_shift_review_is_safe_and_requires_article_link(self):
+        temporary, root, article = self.make_root()
+        self.addCleanup(temporary.cleanup)
+        with patch.object(pipeline, "ROOT", root):
+            self.assertEqual(pipeline.manual_record("2026-08-14", article)["Insight Shift Review"], "PENDING")
+            self.write_publish_record(root, article, "APPROVED")
+            self.assertEqual(pipeline.manual_record("2026-08-14", article)["Insight Shift Review"], "APPROVED")
+            self.write_publish_record(root, article, "yes")
+            self.assertEqual(pipeline.manual_record("2026-08-14", article)["Insight Shift Review"], "INVALID")
+            (root / "docs" / "PUBLISH_2026-08-14.md").write_text(
+                "Article: articles/different.md\nInsight Shift Review: APPROVED\n", encoding="utf-8"
+            )
+            self.assertEqual(pipeline.manual_record("2026-08-14", article)["Insight Shift Review"], "PENDING")
 
     def test_review_b_needs_fix_and_stops_build(self):
         temporary, root, article = self.make_root()
@@ -167,6 +231,40 @@ Required Fixes Status: {fixes}
         daily = (root / "docs" / "DAILY_EDITORIAL_2026-08-13.md").read_text(encoding="utf-8")
         self.assertEqual(pipeline.daily_metadata(daily)[1], 1)
 
+    def test_new_step_two_selected_topic_is_found(self):
+        daily = """## Step 2 — Selected Topic
+
+- 採用テーマ: 新形式の採用テーマ
+
+## Step 3 — Editorial Seeds
+"""
+        self.assertTrue(pipeline.selected_topic_present(daily))
+
+    def test_old_step_three_selected_topic_is_found(self):
+        daily = """## Step 3 — Selected Topic
+
+- 採用テーマ: 旧形式の採用テーマ
+
+## Step 4 — Today's Question Draft
+"""
+        self.assertTrue(pipeline.selected_topic_present(daily))
+
+    def test_blank_selected_topic_is_missing(self):
+        for value in ("", "未選択", "TBD", "Candidate 1"):
+            with self.subTest(value=value):
+                daily = f"""## Step 2 — Selected Topic
+
+- 採用テーマ: {value}
+
+## Step 3 — Editorial Seeds
+"""
+                self.assertFalse(pipeline.selected_topic_present(daily))
+
+    def test_2026_08_14_daily_selected_topic_is_found(self):
+        root = Path(__file__).resolve().parents[1]
+        daily = (root / "docs" / "DAILY_EDITORIAL_2026-08-14.md").read_text(encoding="utf-8")
+        self.assertTrue(pipeline.selected_topic_present(daily))
+
     @staticmethod
     def base_state(**changes):
         root = Path("/tmp/world-insight-test")
@@ -176,7 +274,7 @@ Required Fixes Status: {fixes}
             source_verification_link="VERIFIED", source_verification_file=root / "source.md",
             source_verification_signal="PASS_A", article=root / "article.md", article_text="",
             editorial_review="PASS", review_decision="A", required_fixes="NONE",
-            insight_shift="A", take_one_thing="PASS", editorial_readiness="READY", build="READY",
+            insight_shift="A", insight_shift_review="PENDING", take_one_thing="PASS", editorial_readiness="READY", build="READY",
             human_read="COMPLETE", technical_validation="PASS", local_preview="COMPLETE",
             safari="PASS", chrome="PASS", git_diff_review="COMPLETE", final_approval="PENDING",
             daily_result="IN_PROGRESS", fallback_attempts=0, no_publish_confirmation="PENDING",

@@ -35,6 +35,7 @@ class PipelineState:
     review_decision: str
     required_fixes: str
     insight_shift: str
+    insight_shift_review: str
     take_one_thing: str
     editorial_readiness: str
     build: str
@@ -84,7 +85,7 @@ def world_brief_state(today: str, selected: Path | None = None) -> str:
 def selected_topic_value(text: str) -> str | None:
     """Return a concrete topic recorded in the Selected Topic section."""
     section = re.search(
-        r"^##\s+Step\s+3\s+[—-]\s+Selected Topic\s*$([\s\S]*?)(?=^##\s|\Z)",
+        r"^##\s+Step\s+(?:2|3)\s+[—-]\s+Selected Topic\s*$([\s\S]*?)(?=^##\s|\Z)",
         text,
         re.I | re.M,
     )
@@ -256,6 +257,13 @@ def evaluate_quality(text: str, review_quality: dict[str, str] | None = None) ->
     return insight, take
 
 
+def insight_shift_gate_passed(insight_shift: str, insight_shift_review: str) -> bool:
+    """Pass A directly and B only after an explicit human approval."""
+    return insight_shift == "A" or (
+        insight_shift == "B" and insight_shift_review == "APPROVED"
+    )
+
+
 def review_field_value(text: str, label: str) -> str | None:
     """Read an explicit review field in metadata or Markdown-list form."""
     match = re.search(
@@ -391,6 +399,7 @@ def build_is_fresh(article: Path | None) -> bool:
 
 def manual_record(today: str, article: Path | None) -> dict[str, str]:
     defaults = {
+        "Insight Shift Review": "PENDING",
         "Human Read": "PENDING", "Technical Validation": "NOT_STARTED",
         "Local Preview": "NOT_CHECKED", "Safari": "NOT_CHECKED", "Chrome": "NOT_CHECKED",
         "Git Diff Review": "NOT_CHECKED", "Final Approval": "PENDING",
@@ -405,6 +414,8 @@ def manual_record(today: str, article: Path | None) -> dict[str, str]:
         match = re.search(rf"^{re.escape(key)}\s*[:：]\s*([^\n]+)", text, re.I | re.M)
         if match:
             defaults[key] = match.group(1).strip().upper()
+    if defaults["Insight Shift Review"] not in {"PENDING", "APPROVED"}:
+        defaults["Insight Shift Review"] = "INVALID"
     # Old Pilot and 2026-08-13 records predate the explicit consolidated fields.
     if defaults["Human Read"] == "PENDING" and defaults["Local Preview"] == "COMPLETE":
         defaults["Human Read"] = "COMPLETE"
@@ -436,7 +447,7 @@ def publish_readiness(state: PipelineState) -> tuple[str, str]:
         return "NEEDS_NO_PUBLISH_DECISION", "Record and confirm NO_PUBLISH after Editorial Review C."
     if state.insight_shift == "C" or state.take_one_thing == "FAIL":
         return "BLOCKED", "Resolve the blocked quality gate before publication."
-    if state.editorial_review in {"UNRESOLVED", "PENDING"} or state.insight_shift in {"B", "NEEDS_HUMAN_REVIEW"} or state.take_one_thing == "NEEDS_WORK":
+    if state.editorial_review in {"UNRESOLVED", "PENDING"} or not insight_shift_gate_passed(state.insight_shift, state.insight_shift_review) or state.take_one_thing == "NEEDS_WORK":
         return "NEEDS_REVIEW", "Complete the independent Editorial Review and quality gates."
     if state.human_read != "COMPLETE":
         return "NEEDS_HUMAN_READ", "Complete the human meaning and reading-quality review."
@@ -469,7 +480,7 @@ def inspect(today: str, prepare: bool = True) -> PipelineState:
     candidate_selected = selected_topic_present(daily_text)
     seeds_present = "Insight Shift Seed" in daily_text and "Take One Thing Seed" in daily_text
     editorial_ready = bool(candidate_selected and seeds_present and article and all(section_present(article_text, section) for section in required_sections) and source in {"PASS_A", "PASS_B"} and source_link == "VERIFIED")
-    state = PipelineState(today, brief, world_brief_state(today, brief), daily, source, source_link, source_file, source_signal, article, article_text, review, review_decision, required_fixes, insight, take,
+    state = PipelineState(today, brief, world_brief_state(today, brief), daily, source, source_link, source_file, source_signal, article, article_text, review, review_decision, required_fixes, insight, manual["Insight Shift Review"], take,
                           "READY" if editorial_ready else "NOT_READY", "READY" if build_ready else "NOT_READY",
                           manual["Human Read"], manual["Technical Validation"], manual["Local Preview"], manual["Safari"], manual["Chrome"], manual["Git Diff Review"], manual["Final Approval"], daily_result, fallback_attempts, no_publish_confirmation, "", "")
     state.publish_readiness, state.next_action = publish_readiness(state)
@@ -497,6 +508,7 @@ def print_state(state: PipelineState) -> None:
     print(f"Review Decision: {state.review_decision}")
     print(f"Required Fixes: {state.required_fixes}")
     print(f"Insight Shift: {state.insight_shift}")
+    print(f"Insight Shift Review: {state.insight_shift_review}")
     print(f"Take One Thing: {state.take_one_thing}")
     print(f"Editorial Readiness: {state.editorial_readiness}")
     print(f"Build: {state.build}")
