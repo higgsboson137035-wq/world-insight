@@ -25,7 +25,8 @@ class BuilderRegressionTests(unittest.TestCase):
         root = Path(temporary.name)
         (root / "templates").mkdir()
         (root / "templates" / "insight.html").write_text(
-            "{{ date }} · {{ reading_time }} {{ body }}", encoding="utf-8"
+            "{{ date }} · {{ reading_time }} {{ question }} {{ summary }} {{ body }}",
+            encoding="utf-8",
         )
         (root / "templates" / "index.html").write_text(
             "{{ summary }}", encoding="utf-8"
@@ -72,6 +73,27 @@ class BuilderRegressionTests(unittest.TestCase):
             rendered = build.render_index(article(summary="5 < 7 & 8"))
         self.assertEqual(rendered, "5 &lt; 7 &amp; 8")
 
+    def test_article_displays_escaped_summary_between_question_and_body(self):
+        temporary, root = self.make_root()
+        self.addCleanup(temporary.cleanup)
+        with patch.object(build, "ROOT", root):
+            rendered = build.render_article(article(summary="5 < 7 > 3 & safe"))
+        escaped_summary = "5 &lt; 7 &gt; 3 &amp; safe"
+        self.assertIn(escaped_summary, rendered)
+        self.assertLess(rendered.index("Question"), rendered.index(escaped_summary))
+        self.assertLess(rendered.index(escaped_summary), rendered.index('id="quick-choices"'))
+
+    def test_index_and_article_use_the_same_article_summary(self):
+        temporary, root = self.make_root()
+        self.addCleanup(temporary.cleanup)
+        insight = article(summary="Shared <summary> & facts")
+        with patch.object(build, "ROOT", root):
+            index = build.render_index(insight)
+            rendered_article = build.render_article(insight)
+        escaped_summary = "Shared &lt;summary&gt; &amp; facts"
+        self.assertEqual(index, escaped_summary)
+        self.assertIn(escaped_summary, rendered_article)
+
     def test_2026_08_13_summary_no_longer_contains_emphasis_markers(self):
         source = Path(__file__).resolve().parents[1] / "articles" / "2026-08-13-policy-tool-fit.md"
         summary = build.extract_summary(source.read_text(encoding="utf-8"))
@@ -89,6 +111,53 @@ class BuilderRegressionTests(unittest.TestCase):
         self.assertLess(archive.index("2026-08-14"), archive.index("2026-08-13"))
         self.assertIn('id="quick-choices"', body)
         self.assertIn("Body", body)
+
+    def test_article_keeps_brief_and_major_sections_after_hero_summary(self):
+        temporary, root = self.make_root()
+        self.addCleanup(temporary.cleanup)
+        source = """## Quick Choices
+
+Choice
+
+## 30-Second Brief
+
+### Confirmed Facts
+
+- Brief body
+
+## Human Context
+
+Context
+
+## Decision Space
+
+Decision
+"""
+        insight = build.Article(
+            Path("articles/test.md"),
+            source,
+            {"Title": "Test", "Date": "2026-08-14"},
+            "Question",
+            build.extract_summary(source),
+        )
+        with patch.object(build, "ROOT", root):
+            rendered = build.render_article(insight)
+        summary_position = rendered.index("Brief body")
+        self.assertLess(summary_position, rendered.index('id="quick-choices"'))
+        for section_id in (
+            'id="quick-choices"',
+            'id="30-second-brief"',
+            'id="human-context"',
+            'id="decision-space"',
+        ):
+            self.assertIn(section_id, rendered)
+        self.assertGreater(rendered.rindex("Brief body"), summary_position)
+
+    def test_every_existing_article_has_a_summary(self):
+        self.assertEqual(len(build.load_articles()), 7)
+        for insight in build.load_articles():
+            with self.subTest(source=insight.source.name):
+                self.assertTrue(insight.summary)
 
 
 if __name__ == "__main__":

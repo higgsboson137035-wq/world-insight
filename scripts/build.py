@@ -263,6 +263,7 @@ def render_article(article: Article) -> str:
         "date": html.escape(article.date),
         "reading_time": html.escape(article.reading_time),
         "question": html.escape(article.question),
+        "summary": html.escape(article.summary),
         "body": "".join(body_parts),
     }
     for key, value in values.items():
