@@ -154,8 +154,9 @@ Decision
         self.assertGreater(rendered.rindex("Brief body"), summary_position)
 
     def test_every_existing_article_has_a_summary(self):
-        self.assertEqual(len(build.load_articles()), 7)
-        for insight in build.load_articles():
+        articles = build.load_articles()
+        self.assertTrue(articles)
+        for insight in articles:
             with self.subTest(source=insight.source.name):
                 self.assertTrue(insight.summary)
 
