@@ -1,28 +1,20 @@
 # World Insight Project Status
 
-以下のJSONコードブロックは Project Dashboard `schema_version=1` 用の管理情報である。進捗は v0.1 の完了を100とする概算値であり、作業内容の変化に応じて更新する。
+以下のJSONコードブロックは Project Dashboard `schema_version=1` 用の管理情報である。進捗は v0.1 の完了を100とする。
 
-```json
+```json project-dashboard-v1
 {
   "schema_version": 1,
   "project_id": "world-insight",
   "name": "World Insight",
-  "status": "in_progress",
-  "priority": "high",
-  "current_work": "初回Gitコミットとv0.1プロトタイプの準備",
-  "progress": 40,
+  "status": "日次編集運用中",
+  "progress_percent": 100,
+  "priority": "高",
+  "current_work": "Morning Editorial Pipelineによる日次評価と公開判断",
   "remaining_tasks": [
-    "v0.1: 初回Gitコミット",
-    "v0.1: HTMLプロトタイプ",
-    "v0.1: JSONデータ形式設計",
-    "v0.1: 最新ページ",
-    "v0.1: 日付別アーカイブ",
-    "v0.1: Safari表示確認",
-    "v0.1: 実ニュースを使った創刊号",
-    "v0.1以降: GitHubリポジトリ作成",
-    "v0.1以降: GitHub Pages",
-    "v0.1以降: 日次生成の半自動化",
-    "v0.1以降: 日次自動化"
+    "次回World Brief後のMorning Editorial Meeting",
+    "品質Gateを通過した候補だけSource Verification以降へ進める",
+    "公開候補発生時のHuman Reviewと手動公開"
   ],
   "risks": [
     "AIが結論を押し付ける",
@@ -31,16 +23,26 @@
     "テーマ選定がニュースの話題性だけに引っ張られる",
     "World Briefとの役割が曖昧になる"
   ],
-  "estimated_sessions": 5
+  "estimated_sessions": null,
+  "estimate_confidence": "未評価",
+  "updated_at": "2026-08-27T23:37:22+09:00",
+  "data_note": "進捗率はPROJECT_STATUS.md既存定義のv0.1完了を100とする基準です。初回Gitコミット、Builder、公開用HTML、日付別アーカイブ、実ニュース記事、日次Morning Editorial運用が実装済みです。2026-08-27は候補重複を理由にNO_PUBLISHで正常終了しました。必要セッション数は未評価です。",
+  "repository": {
+    "git_enabled": true,
+    "github_enabled": true,
+    "github_visibility": null,
+    "default_branch": "main"
+  }
 }
 ```
 
 ## 現在地
 
-- Foundation 第1段階の理念・編集基盤7文書は作成済み。
-- Foundation 第2段階のプロジェクト仕様、情報源方針、編集ワークフロー、および Foundation Review は完了済み。
-- 実装、公開、日次運用は未着手。
+- Foundation文書、Builder、公開用HTML、日付別アーカイブを実装済み。
+- 実ニュースを使った記事と公開記録を作成済み。
+- Morning Editorial Pipelineで日次に候補を評価し、品質Gateを満たさない日はNO_PUBLISHとして正常終了する運用中。
+- 2026年8月27日は候補のReader Transformationが既存記事と重複したためNO_PUBLISH。
 
 ## 進捗の考え方
 
-`progress` は Foundation 文書、運用仕様、Foundation Review の完了を反映して40とする。今後は、v0.1 に必要な初回Gitコミット、プロトタイプ、データ形式、創刊号、表示確認の完了に応じて更新する。`estimated_sessions` は現時点から v0.1 までを対象とし、外部公開と自動化は含めない。
+`progress_percent` は既存定義どおりv0.1完了を100とし、現在は100とする。次回以降の作業量は日次候補とHuman Review結果で変わるため、`estimated_sessions` は未評価とする。
