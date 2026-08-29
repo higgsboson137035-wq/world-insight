@@ -26,7 +26,7 @@
   "estimated_sessions": null,
   "estimate_confidence": "未評価",
   "updated_at": "2026-08-27T23:37:22+09:00",
-  "data_note": "進捗率はPROJECT_STATUS.md既存定義のv0.1完了を100とする基準です。初回Gitコミット、Builder、公開用HTML、日付別アーカイブ、実ニュース記事、日次Morning Editorial運用が実装済みです。2026-08-27は候補重複を理由にNO_PUBLISHで正常終了しました。必要セッション数は未評価です。",
+  "data_note": "進捗率はPROJECT_STATUS.md既存定義のv0.1完了を100とする基準です。初回Gitコミット、Builder、公開用HTML、日付別アーカイブ、実ニュース記事、日次Morning Editorial運用が実装済みです。2026-08-29は候補重複を理由にNO_PUBLISHで正常終了しました。未追跡のsample/があるためupdated_atは旧値を維持します。必要セッション数は未評価です。",
   "repository": {
     "git_enabled": true,
     "github_enabled": true,
@@ -41,7 +41,7 @@
 - Foundation文書、Builder、公開用HTML、日付別アーカイブを実装済み。
 - 実ニュースを使った記事と公開記録を作成済み。
 - Morning Editorial Pipelineで日次に候補を評価し、品質Gateを満たさない日はNO_PUBLISHとして正常終了する運用中。
-- 2026年8月27日は候補のReader Transformationが既存記事と重複したためNO_PUBLISH。
+- 2026年8月29日は候補のReader Transformationが既存記事と重複したためNO_PUBLISH。
 
 ## 進捗の考え方
 
