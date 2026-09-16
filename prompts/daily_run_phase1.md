@@ -1,4 +1,4 @@
-Prompt-Version: phase1-0.3
+Prompt-Version: phase1-0.4
 
 # World Insight Daily Run — Phase 1
 
@@ -171,6 +171,7 @@ Source-Verification: NOT_STARTED
 formal Candidateがない、または独立したReader Transformationと十分なEvidence feasibilityを同時に確認できるformal Candidateがない場合は、次を使用してください。
 
 ```text
+Candidate-Count: 0
 Daily-Candidate-Outcome: NO_PUBLISH_CANDIDATE
 Recommended-Candidate: NONE
 Human-Decision: PENDING
@@ -183,7 +184,9 @@ Gate-1-Follow-Up: NONE
 有望Candidateがある場合は、次を使用してください。
 
 ```text
+Candidate-Count: N
 Daily-Candidate-Outcome: CANDIDATES_FOR_HUMAN_REVIEW
+Recommended-Candidate: Candidate N
 Human-Decision: PENDING
 Source-Verification: NOT_STARTED
 Gate-1-Follow-Up: SOURCE_VERIFICATION_REQUIRED
@@ -205,20 +208,47 @@ Human Decisionは常に`PENDING`です。Humanの承認なしに正式Daily deci
 
 次のmetadataを必ず含めてください。
 
+Candidate-Countを決定した後、Candidate Listや`## Recommended Candidate` sectionより先に、Required Metadata blockを完成させてください。Required Metadata block内の`Recommended-Candidate` metadata lineは必須であり、省略してはいけません。
+
 ```text
 Run-Date: YYYY-MM-DD
 Run-Start: ISO-8601 local timestamp
 Brief-Readiness: READY | BRIEF_NOT_READY
 Candidate-Count: 0..3
 Daily-Candidate-Outcome: NO_PUBLISH_CANDIDATE | CANDIDATES_FOR_HUMAN_REVIEW
+Recommended-Candidate: NONE | Candidate 1 | Candidate 2 | Candidate 3
 Source-Verification: NOT_STARTED
 Gate-1-Follow-Up: NONE | SOURCE_VERIFICATION_REQUIRED
 Human-Decision: PENDING
-Prompt-Version: phase1-0.3
+Prompt-Version: phase1-0.4
 Prompt-SHA256: INJECTED_BY_ORCHESTRATOR
 ```
 
 `Prompt-SHA256`はこのPrompt自身で計算しないでください。将来のorchestratorが実行時に計算・注入・検証する値です。
+
+Candidate-Countが0の場合は、Required Metadata blockで次の対応を使用してください。
+
+```text
+Candidate-Count: 0
+Daily-Candidate-Outcome: NO_PUBLISH_CANDIDATE
+Recommended-Candidate: NONE
+Gate-1-Follow-Up: NONE
+```
+
+Candidate-Countが1〜3の場合は、Required Metadata blockで次の対応を使用してください。
+
+```text
+Candidate-Count: <actual count>
+Daily-Candidate-Outcome: CANDIDATES_FOR_HUMAN_REVIEW
+Recommended-Candidate: Candidate <selected formal candidate number>
+Gate-1-Follow-Up: SOURCE_VERIFICATION_REQUIRED
+```
+
+`<selected formal candidate number>`は、実在するformal CandidateからLLMが選択する番号です。Candidate 1を機械的に推薦してはいけません。metadataの機械補完、missing metadataのvalid化、automatic retryも行ってはいけません。判断に迷っても`Recommended-Candidate` metadata lineを省略してはいけません。
+
+Required Metadata内の`Recommended-Candidate: ...` lineと`## Recommended Candidate` sectionは別物です。両方を必ず出力し、section見出しやsection本文でmetadata lineを代用してはいけません。
+
+最終出力前に、Required Metadata block内の各必須metadata lineが正しい形式で存在することを生成側で確認してください。`Recommended-Candidate`も確認対象に含めてください。このself-checkはvalidatorの代替ではありません。chain-of-thought、内部推論、self-checkの思考過程は出力しないでください。
 
 ### Required Sections
 
