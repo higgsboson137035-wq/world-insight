@@ -11,6 +11,7 @@ import scripts.daily_orchestrator as orchestrator_module
 from scripts.codex_runner import CodexResult
 from scripts.daily_orchestrator import (
     PROMPT_HASH_PLACEHOLDER,
+    RUNTIME_DATE_PLACEHOLDER,
     _write_text_atomically_once,
     run_phase1,
 )
@@ -40,7 +41,10 @@ class DailyOrchestratorTests(unittest.TestCase):
         self.brief = self.root / "brief"
         self.prompt = self.root / "prompt.md"
         self.prompt.write_text(
-            "Prompt-Version: phase1-0.2\nPrompt-SHA256: INJECTED_BY_ORCHESTRATOR\nPrompt body.\n",
+            "Prompt-Version: phase1-0.2\n"
+            "Run target: INJECTED_RUN_DATE_BY_ORCHESTRATOR\n"
+            "Prompt-SHA256: INJECTED_BY_ORCHESTRATOR\n"
+            "Prompt body.\n",
             encoding="utf-8",
         )
         self.fake_runner = Mock(
@@ -107,18 +111,21 @@ class DailyOrchestratorTests(unittest.TestCase):
         self.assertEqual(validation["status"], "PASS")
         self.assertEqual(json.loads((run_path / "status.json").read_text())["human_review_required"], True)
 
-    def test_prompt_hash_is_injected_and_source_unchanged(self):
+    def test_prompt_runtime_values_are_injected_and_source_unchanged(self):
         original = self.prompt.read_bytes()
         captured = {}
+        requested_date = "2026-09-18"
 
         def runner(prompt, **kwargs):
             captured["prompt"] = prompt
             return self.fake_runner.return_value
 
-        self.execute(codex_runner=runner)
+        self.execute(codex_runner=runner, requested_date=requested_date)
         self.assertEqual(self.prompt.read_bytes(), original)
         self.assertEqual(captured["prompt"].count(PROMPT_HASH_PLACEHOLDER), 0)
+        self.assertEqual(captured["prompt"].count(RUNTIME_DATE_PLACEHOLDER), 0)
         self.assertIn("Prompt-SHA256: ", captured["prompt"])
+        self.assertIn(f"Run target: {requested_date}", captured["prompt"])
 
     def test_prompt_missing_fails_closed(self):
         result = self.execute(prompt_path=self.root / "missing.md")
@@ -153,9 +160,31 @@ class DailyOrchestratorTests(unittest.TestCase):
 
     def test_prompt_placeholder_duplicate_fails_closed(self):
         path = self.root / "duplicate-placeholder.md"
-        path.write_text(f"{PROMPT_HASH_PLACEHOLDER}\n{PROMPT_HASH_PLACEHOLDER}\n", encoding="utf-8")
+        path.write_text(
+            f"{RUNTIME_DATE_PLACEHOLDER}\n{PROMPT_HASH_PLACEHOLDER}\n{PROMPT_HASH_PLACEHOLDER}\n",
+            encoding="utf-8",
+        )
         result = self.execute(prompt_path=path)
         self.assertEqual(result.error_reason, "PROMPT_HASH_PLACEHOLDER_DUPLICATE")
+        self.fake_runner.assert_not_called()
+
+    def test_date_placeholder_missing_fails_closed(self):
+        path = self.root / "missing-date-placeholder.md"
+        path.write_text(f"Prompt-SHA256: {PROMPT_HASH_PLACEHOLDER}\n", encoding="utf-8")
+        result = self.execute(prompt_path=path)
+        self.assertEqual(result.error_reason, "PROMPT_DATE_PLACEHOLDER_MISSING")
+        self.fake_runner.assert_not_called()
+
+    def test_date_placeholder_duplicate_fails_closed(self):
+        path = self.root / "duplicate-date-placeholder.md"
+        path.write_text(
+            f"Prompt-SHA256: {PROMPT_HASH_PLACEHOLDER}\n"
+            f"Run target: {RUNTIME_DATE_PLACEHOLDER}\n"
+            f"Run target duplicate: {RUNTIME_DATE_PLACEHOLDER}\n",
+            encoding="utf-8",
+        )
+        result = self.execute(prompt_path=path)
+        self.assertEqual(result.error_reason, "PROMPT_DATE_PLACEHOLDER_DUPLICATE")
         self.fake_runner.assert_not_called()
 
     def test_brief_not_ready_does_not_call_codex(self):
@@ -297,10 +326,17 @@ class DailyOrchestratorTests(unittest.TestCase):
         self.assertEqual((payload["stdout"], payload["stderr"]), ("candidate output", "diagnostic"))
 
     def test_validator_receives_runtime_metadata(self):
-        result = self.execute()
+        captured = {}
+
+        def runner(prompt, **kwargs):
+            captured["prompt"] = prompt
+            return self.fake_runner.return_value
+
+        result = self.execute(codex_runner=runner)
         self.assertEqual(result.execution_status, "GATE1_READY")
         kwargs = self.fake_validator.call_args.kwargs
         self.assertEqual(kwargs["requested_date"], DATE)
+        self.assertIn(f"Run target: {kwargs['requested_date']}", captured["prompt"])
         self.assertEqual(kwargs["prompt_version"], "phase1-0.2")
         self.assertEqual(kwargs["brief_readiness"], "READY")
         self.assertEqual(len(kwargs["prompt_sha256"]), 64)

@@ -29,6 +29,7 @@ from scripts.runtime_state import (
 
 
 PROMPT_HASH_PLACEHOLDER = "INJECTED_BY_ORCHESTRATOR"
+RUNTIME_DATE_PLACEHOLDER = "INJECTED_RUN_DATE_BY_ORCHESTRATOR"
 DEFAULT_RUNTIME_ROOT = Path.home() / "Library" / "Application Support" / "WorldInsightDaily"
 DEFAULT_PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "daily_run_phase1.md"
 
@@ -135,7 +136,7 @@ def _status_record(
     return record
 
 
-def _read_prompt(prompt_path: Path) -> tuple[str, str, str]:
+def _read_prompt(prompt_path: Path, requested_date: str) -> tuple[str, str, str]:
     if not prompt_path.is_file():
         raise ValueError("PROMPT_NOT_FOUND")
     try:
@@ -152,6 +153,11 @@ def _read_prompt(prompt_path: Path) -> tuple[str, str, str]:
         raise ValueError("PROMPT_HASH_PLACEHOLDER_MISSING")
     if count != 1:
         raise ValueError("PROMPT_HASH_PLACEHOLDER_DUPLICATE")
+    date_count = prompt_text.count(RUNTIME_DATE_PLACEHOLDER)
+    if date_count == 0:
+        raise ValueError("PROMPT_DATE_PLACEHOLDER_MISSING")
+    if date_count != 1:
+        raise ValueError("PROMPT_DATE_PLACEHOLDER_DUPLICATE")
     prompt_sha256 = hashlib.sha256(raw).hexdigest()
     prompt_version = next(
         (
@@ -161,7 +167,9 @@ def _read_prompt(prompt_path: Path) -> tuple[str, str, str]:
         ),
         "UNKNOWN",
     )
-    return prompt_text.replace(PROMPT_HASH_PLACEHOLDER, prompt_sha256), prompt_version, prompt_sha256
+    assembled_prompt = prompt_text.replace(PROMPT_HASH_PLACEHOLDER, prompt_sha256)
+    assembled_prompt = assembled_prompt.replace(RUNTIME_DATE_PLACEHOLDER, requested_date)
+    return assembled_prompt, prompt_version, prompt_sha256
 
 
 def _persist_status(run_path: Path, result: OrchestratorResult, **metadata: str) -> None:
@@ -259,7 +267,7 @@ def run_phase1(
             _persist_status(run_path, result)
 
             try:
-                prompt, prompt_version, prompt_sha256 = _read_prompt(prompt_path)
+                prompt, prompt_version, prompt_sha256 = _read_prompt(prompt_path, requested_date)
             except ValueError as exc:
                 result = _result(
                     execution_status="ERROR",

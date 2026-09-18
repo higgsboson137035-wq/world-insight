@@ -13,6 +13,21 @@ class PromptContractTests(unittest.TestCase):
     def test_version_and_placeholder_contract(self):
         self.assertEqual(self.prompt.count("Prompt-Version: phase1-0.4"), 2)
         self.assertEqual(self.prompt.count("Prompt-SHA256: INJECTED_BY_ORCHESTRATOR"), 1)
+        self.assertEqual(self.prompt.count("INJECTED_RUN_DATE_BY_ORCHESTRATOR"), 1)
+        self.assertIn("このRunの実行対象日は `INJECTED_RUN_DATE_BY_ORCHESTRATOR` です", self.prompt)
+
+    def test_execution_role_boundary_contract(self):
+        self.assertIn("このPromptはHumanによるDaily Workflow開始要求ではありません", self.prompt)
+        self.assertIn("World Insight Daily Orchestratorによって起動されたPhase 1 child generatorです", self.prompt)
+        self.assertIn("outer Daily Workflowはすでに実行中です", self.prompt)
+        self.assertIn("許可されたread-only inspectionを行い、このPrompt contractに従ったGate 1 packageだけをstdoutへ生成することです", self.prompt)
+        self.assertIn("Gate 1 packageを出力したら停止してください", self.prompt)
+        self.assertIn("`scripts/manual_runner.py`", self.prompt)
+        self.assertIn("`scripts/daily_orchestrator.py`", self.prompt)
+        self.assertIn("`codex exec`", self.prompt)
+        self.assertIn("gate1 validator", self.prompt)
+        self.assertIn("Human-approved-rerun", self.prompt)
+        self.assertIn("outer workflowの状態を復旧、再開、再実行しようとしてはいけません", self.prompt)
 
     def test_metadata_first_and_self_check_contract(self):
         self.assertIn("Candidate-Countを決定した後、Candidate Listや`## Recommended Candidate` sectionより先に、Required Metadata blockを完成させてください", self.prompt)

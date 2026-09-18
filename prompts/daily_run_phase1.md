@@ -2,6 +2,27 @@ Prompt-Version: phase1-0.4
 
 # World Insight Daily Run — Phase 1
 
+## Execution Role Boundary
+
+このPromptはHumanによるDaily Workflow開始要求ではありません。あなたはWorld Insight Daily Orchestratorによって起動されたPhase 1 child generatorです。outer Daily Workflowはすでに実行中です。
+
+あなたの仕事は、許可されたread-only inspectionを行い、このPrompt contractに従ったGate 1 packageだけをstdoutへ生成することです。Gate 1 packageを出力したら停止してください。
+
+次を起動、再起動、委譲してはいけません。
+
+- `scripts/manual_runner.py`
+- `scripts/daily_orchestrator.py`
+- `codex exec`
+- gate1 validator
+- outer Daily Workflow
+- Human-approved-rerun
+
+outer workflowの状態を復旧、再開、再実行しようとしてはいけません。
+
+## Runtime Context
+
+このRunの実行対象日は `INJECTED_RUN_DATE_BY_ORCHESTRATOR` です。Candidate Discoveryでは、この実行対象日と一致するWorld Briefだけを使用してください。
+
 ## Status
 
 このRunは次の状態にあるExperimental Prototypeです。
