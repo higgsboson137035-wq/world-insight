@@ -104,7 +104,11 @@ def _result(
 def _metadata(lines: list[str], errors: list[str]) -> dict[str, str]:
     values: dict[str, str] = {}
     counts: dict[str, int] = {}
-    for line in lines:
+    first_section = next(
+        (index for index, line in enumerate(lines) if SECTION_PATTERN.fullmatch(line)),
+        len(lines),
+    )
+    for line in lines[:first_section]:
         match = METADATA_PATTERN.fullmatch(line)
         if not match:
             continue

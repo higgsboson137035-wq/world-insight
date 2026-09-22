@@ -113,7 +113,48 @@ class Gate1ValidatorTests(unittest.TestCase):
         self.assert_malformed(package().replace("Human-Decision: PENDING\n", ""), "MISSING_METADATA:Human-Decision")
 
     def test_duplicate_metadata(self):
-        self.assert_malformed(package() + "\nHuman-Decision: PENDING", "DUPLICATE_METADATA:Human-Decision")
+        raw = package().replace(
+            "Human-Decision: PENDING\n",
+            "Human-Decision: PENDING\nHuman-Decision: PENDING\n",
+        )
+        self.assert_malformed(raw, "DUPLICATE_METADATA:Human-Decision")
+
+    def test_duplicate_recommended_candidate_in_metadata_block(self):
+        raw = package().replace(
+            "Recommended-Candidate: NONE\n",
+            "Recommended-Candidate: NONE\nRecommended-Candidate: NONE\n",
+        )
+        self.assert_malformed(
+            raw,
+            "DUPLICATE_METADATA:Recommended-Candidate",
+        )
+
+    def test_recommended_candidate_in_section_is_not_metadata_duplicate(self):
+        raw = package().replace(
+            "## Recommended Candidate",
+            "## Recommended Candidate\n\nRecommended-Candidate: NONE",
+        )
+        result = self.validate(raw)
+        self.assertTrue(result.valid, result.errors)
+
+    def test_section_metadata_like_lines_do_not_pollute_metadata(self):
+        raw = package().replace(
+            "## Analysis",
+            "## Analysis\nRun-Date: 2099-01-01\nPrompt-SHA256: invalid",
+        )
+        result = self.validate(raw)
+        self.assertTrue(result.valid, result.errors)
+
+    def test_metadata_only_after_section_is_missing(self):
+        raw = package().replace("Human-Decision: PENDING\n", "")
+        raw = raw.replace("## Analysis", "## Analysis\nHuman-Decision: PENDING")
+        self.assert_malformed(raw, "MISSING_METADATA:Human-Decision")
+
+    def test_empty_metadata_value(self):
+        self.assert_malformed(
+            package().replace("Recommended-Candidate: NONE", "Recommended-Candidate:"),
+            "EMPTY_METADATA:Recommended-Candidate",
+        )
 
     def test_invalid_candidate_count(self):
         self.assert_malformed(package().replace("Candidate-Count: 0", "Candidate-Count: 4"), "INVALID_CANDIDATE_COUNT")
