@@ -54,6 +54,16 @@ class BriefReadinessTests(unittest.TestCase):
         os.utime(path, (timestamp, timestamp))
         return path
 
+    def write_draft(self, body, *, notice=brief_readiness.REVIEW_DRAFT_NOTICE, timestamp=None):
+        drafts = self.root / "drafts"
+        drafts.mkdir(exist_ok=True)
+        path = drafts / f"{TEST_DATE}-human-review.md"
+        path.write_text(notice + body, encoding="utf-8")
+        if timestamp is None:
+            timestamp = datetime(2026, 9, 15, 12, 0, tzinfo=JST).timestamp()
+        os.utime(path, (timestamp, timestamp))
+        return path
+
     def check(self, requested=TEST_DATE):
         return brief_readiness.check_brief(requested, self.root)
 
@@ -87,7 +97,63 @@ class BriefReadinessTests(unittest.TestCase):
         self.write_brief(brief_text(marker=False))
         result = self.check()
         self.assertFalse(result["checks"]["generated_marker_exists"])
-        self.assertIn("MUST_FAILED:generated_marker_exists", result["errors"])
+        self.assertFalse(result["checks"]["recognized_generation_contract"])
+        self.assertIn("CURRENT_DRAFT_MISSING", result["errors"])
+
+    def test_current_published_brief_matches_review_draft(self):
+        body = brief_text(marker=False)
+        self.write_brief(body)
+        self.write_draft(body)
+        result = self.check()
+        self.assertTrue(result["ready"])
+        self.assertFalse(result["checks"]["generated_marker_exists"])
+        self.assertTrue(result["checks"]["recognized_generation_contract"])
+
+    def test_draft_alone_is_not_a_brief(self):
+        self.write_draft(brief_text(marker=False))
+        result = self.check()
+        self.assertEqual(result["status"], "BRIEF_NOT_READY")
+        self.assertIn("MISSING_BRIEF", result["errors"])
+
+    def test_current_draft_notice_must_match(self):
+        body = brief_text(marker=False)
+        self.write_brief(body)
+        self.write_draft(body, notice="# Human Review\n\n")
+        result = self.check()
+        self.assertIn("CURRENT_DRAFT_NOTICE_INVALID", result["errors"])
+
+    def test_current_draft_body_must_match_public_brief(self):
+        body = brief_text(marker=False)
+        self.write_brief(body)
+        self.write_draft(body.replace("Summary", "Changed summary"))
+        result = self.check()
+        self.assertIn("CURRENT_DRAFT_BODY_MISMATCH", result["errors"])
+
+    def test_current_draft_must_be_fresh(self):
+        body = brief_text(marker=False)
+        self.write_brief(body)
+        stale = datetime(2026, 9, 14, 23, 59, tzinfo=JST).timestamp()
+        self.write_draft(body, timestamp=stale)
+        result = self.check()
+        self.assertIn("CURRENT_DRAFT_STALE", result["errors"])
+
+    def test_current_generation_does_not_bypass_top_three(self):
+        body = brief_text(marker=False, top3=False)
+        self.write_brief(body)
+        self.write_draft(body)
+        result = self.check()
+        self.assertTrue(result["checks"]["recognized_generation_contract"])
+        self.assertIn("MUST_FAILED:top3_items_complete", result["errors"])
+
+    def test_current_generation_does_not_bypass_public_freshness(self):
+        body = brief_text(marker=False)
+        path = self.write_brief(body)
+        self.write_draft(body)
+        stale = datetime(2026, 9, 14, 23, 59, tzinfo=JST).timestamp()
+        os.utime(path, (stale, stale))
+        result = self.check()
+        self.assertTrue(result["checks"]["recognized_generation_contract"])
+        self.assertIn("MUST_FAILED:mtime_matches_requested_date", result["errors"])
 
     def test_missing_todays_top_three(self):
         self.write_brief(brief_text().replace("## Today's Top 3", "## News"))

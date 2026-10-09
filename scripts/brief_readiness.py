@@ -35,6 +35,10 @@ SHOULD_HEADINGS = (
     "## 🇯🇵 日本への影響",
 )
 GENERATED_MARKER = "*Generated automatically by World Brief.*"
+REVIEW_DRAFT_NOTICE = (
+    "# World Brief — Human確認前・未公開\n\n"
+    "> 記事の事実・出典・日時・リンクはHuman未確認です。\n\n"
+)
 DATE_PATTERN = re.compile(r"^_Date:\s*(\d{4}-\d{2}-\d{2})_\s*$")
 TOP3_HEADING_PATTERN = re.compile(r"^## Today's Top 3\s*$")
 SECTION_HEADING_PATTERN = re.compile(r"^##\s+")
@@ -97,6 +101,30 @@ def _mtime_is_requested_date(path: Path, requested: date) -> bool:
     return datetime.fromtimestamp(path.stat().st_mtime, JST).date() == requested
 
 
+def _current_generation_check(brief_root: Path, requested: date, public_text: str) -> str:
+    """Recognize the published Markdown produced from a dated review draft.
+
+    This checks artifact correspondence, not publication or evidence quality.
+    The draft is never returned as the Brief input.
+    """
+
+    draft = brief_root / "drafts" / f"{requested.isoformat()}-human-review.md"
+    if draft.is_symlink() or not draft.is_file():
+        return "CURRENT_DRAFT_MISSING"
+    try:
+        draft_text = draft.read_text(encoding="utf-8")
+        draft_is_fresh = _mtime_is_requested_date(draft, requested)
+    except (OSError, UnicodeError):
+        return "CURRENT_DRAFT_READ_ERROR"
+    if not draft_is_fresh:
+        return "CURRENT_DRAFT_STALE"
+    if not draft_text.startswith(REVIEW_DRAFT_NOTICE):
+        return "CURRENT_DRAFT_NOTICE_INVALID"
+    if draft_text[len(REVIEW_DRAFT_NOTICE):] != public_text:
+        return "CURRENT_DRAFT_BODY_MISMATCH"
+    return "PASS"
+
+
 def _base_checks() -> dict[str, bool]:
     return {
         "file_exists": False,
@@ -107,6 +135,7 @@ def _base_checks() -> dict[str, bool]:
         "top3_items_complete": False,
         "required_headings_exist": False,
         "generated_marker_exists": False,
+        "recognized_generation_contract": False,
         "mtime_matches_requested_date": False,
     }
 
@@ -181,6 +210,13 @@ def check_brief(requested_date: str, brief_root: Path = DEFAULT_BRIEF_ROOT) -> d
     checks["top3_items_complete"] = _check_top3(text)
     checks["required_headings_exist"] = all(heading in text.splitlines() for heading in REQUIRED_HEADINGS)
     checks["generated_marker_exists"] = GENERATED_MARKER in text
+    if checks["generated_marker_exists"]:
+        checks["recognized_generation_contract"] = True
+    else:
+        generation_result = _current_generation_check(brief_root, requested, text)
+        checks["recognized_generation_contract"] = generation_result == "PASS"
+        if generation_result != "PASS":
+            errors.append(generation_result)
     try:
         checks["mtime_matches_requested_date"] = _mtime_is_requested_date(path, requested)
     except OSError:
@@ -201,7 +237,7 @@ def check_brief(requested_date: str, brief_root: Path = DEFAULT_BRIEF_ROOT) -> d
         "top3_heading_exists",
         "top3_items_complete",
         "required_headings_exist",
-        "generated_marker_exists",
+        "recognized_generation_contract",
         "mtime_matches_requested_date",
     )
     for check_name in must_checks:
